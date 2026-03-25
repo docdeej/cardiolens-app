@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CardioLens — ECG Platform</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@300;500;700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body,#root{height:100%;background:#F0F4F8;color:#1a2b3c;font-family:'DM Sans',sans-serif}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:#c2cfe0;border-radius:4px}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+
+const BACKEND_URL = "https://web-production-78de3.up.railway.app";
+
+const CSS = `
+.shell{display:flex;height:100vh;overflow:hidden}
+.sb{width:214px;flex-shrink:0;background:#0d1f35;display:flex;flex-direction:column}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{height:52px;background:#fff;border-bottom:1px solid #dde5ef;display:flex;align-items:center;padding:0 20px;gap:12px;flex-shrink:0;box-shadow:0 1px 3px rgba(13,31,53,0.06)}
+.body{flex:1;overflow-y:auto;padding:20px}
+.sb-logo{padding:18px 16px 14px;border-bottom:1px solid rgba(255,255,255,0.07);display:flex;align-items:center;gap:10px}
+.sb-icon{width:32px;height:32px;background:#c0392b;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.sb-title{font-family:'Fraunces',serif;font-size:16px;font-weight:700;color:#fff;line-height:1.1}
+.sb-sub{font-family:'DM Mono',monospace;font-size:8px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.1em;margin-top:1px}
+.sb-nav{padding:10px 8px;flex:1}
+.sb-grp{font-family:'DM Mono',monospace;font-size:8px;color:rgba(255,255,255,0.28);text-transform:uppercase;letter-spacing:0.12em;padding:10px 8px 3px}
+.sb-btn{display:flex;align-items:center;gap:9px;padding:8px 9px;border-radius:6px;cursor:pointer;border:none;background:transparent;width:100%;text-align:left;color:rgba(255,255,255,0.5);font-family:'DM Sans',sans-serif;font-size:13px;transition:all 0.14s}
+.sb-btn:hover{background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.85)}
+.sb-btn.on{background:rgba(192,57,43,0.22);color:#fff;font-weight:500}
+.sb-ico{font-size:14px;width:18px;text-align:center;flex-shrink:0}
+.sdot{width:5px;height:5px;border-radius:50%;background:transparent;margin-left:auto}
+.sb-btn.on .sdot{background:#e74c3c}
+.sb-foot{padding:12px 14px;border-top:1px solid rgba(255,255,255,0.06)}
+.ldot{width:7px;height:7px;border-radius:50%;background:#27ae60;animation:lp 2.5s infinite;flex-shrink:0}
+.ldot.off{background:#e74c3c;animation:none}
+@keyframes lp{0%,100%{box-shadow:0 0 0 0 rgba(39,174,96,0.4)}60%{box-shadow:0 0 0 6px rgba(39,174,96,0)}}
+.card{background:#fff;border:1px solid #dde5ef;border-radius:11px;box-shadow:0 1px 3px rgba(13,31,53,0.07),0 4px 12px rgba(13,31,53,0.05)}
+.ch{padding:16px 18px 0}.cb{padding:14px 18px 18px}
+.ct{font-family:'Fraunces',serif;font-size:15px;font-weight:500}
+.cs{font-family:'DM Mono',monospace;font-size:11px;color:#7a95a8;margin-top:2px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 15px;border-radius:7px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:all 0.14s;border:none}
+.btn-n{background:#0d1f35;color:#fff}.btn-n:hover{background:#162d4a}
+.btn-n:disabled{background:#c2cfe0;color:#7a95a8;cursor:not-allowed}
+.btn-r{background:#c0392b;color:#fff}.btn-r:hover{background:#e74c3c}
+.btn-g{background:#1a7a4a;color:#fff}.btn-g:hover{background:#1e9459}
+.btn-o{background:transparent;color:#0d1f35;border:1.5px solid #c2cfe0}.btn-o:hover{border-color:#0d1f35}
+.btn-sm{padding:6px 12px;font-size:12px;border-radius:6px}
+.lbl{font-family:'DM Mono',monospace;font-size:10px;font-weight:500;color:#4a6277;text-transform:uppercase;letter-spacing:0.07em;display:block;margin-bottom:4px}
+.inp{width:100%;padding:7px 10px;border:1.5px solid #dde5ef;border-radius:6px;font-family:'DM Sans',sans-serif;font-size:13px;color:#1a2b3c;background:#fff;transition:border-color 0.14s}
+.inp:focus{outline:none;border-color:#0d1f35}
+.badge{display:inline-flex;align-items:center;padding:2px 7px;border-radius:4px;font-size:9px;font-weight:600;font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:0.04em}
+.bg{background:#e6f7ef;color:#1a7a4a}.br{background:#fdecea;color:#c0392b}
+.ba{background:#fef3e2;color:#d4820a}.bn{background:#e8edf3;color:#1a3350}
+.rb{border-left:3px solid #dde5ef;padding:9px 13px;margin-bottom:8px;border-radius:0 7px 7px 0;background:#f7f9fc}
+.rb-hi{border-color:#0d1f35;background:#eef3fb}.rb-warn{border-color:#d4820a;background:#fef9ec}
+.rb-crit{border-color:#c0392b;background:#fef7f6}
+.rlbl{font-family:'DM Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:0.08em;color:#7a95a8;margin-bottom:3px}
+.rtxt{font-size:13px;color:#1a2b3c;line-height:1.7}
+.uzone{border:2px dashed #c2cfe0;border-radius:10px;cursor:pointer;transition:all 0.18s;background:#f7f9fc;text-align:center;padding:28px 20px}
+.uzone:hover{border-color:#0d1f35;background:#eef3fb}
+.uzone.filled{border-style:solid;border-color:#0d1f35;background:#fff;padding:12px;cursor:default}
+.crit-box{background:#fdecea;border:1.5px solid #c0392b;border-radius:9px;padding:12px 16px;display:flex;gap:12px;margin-bottom:12px}
+.ok-box{background:#eaf6ef;border:1.5px solid #1a7a4a;border-radius:9px;padding:12px 16px;display:flex;gap:12px;margin-bottom:12px}
+.alert-icon{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700;flex-shrink:0}
+@keyframes fu{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.fu{animation:fu 0.28s ease forwards}
+.spinr{animation:spin 0.75s linear infinite;display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,0.4);border-top-color:#fff;border-radius:50%}
+.bc{font-family:'DM Mono',monospace;font-size:11px;color:#7a95a8;display:flex;align-items:center;gap:5px}
+.bca{color:#1a2b3c;font-weight:500}
+.pdf-page{background:#fff;width:100%;border:1px solid #dde5ef;border-radius:8px;padding:28px 32px;box-shadow:0 2px 12px rgba(13,31,53,0.08)}
+.pdf-st{font-family:'DM Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:0.1em;color:#0d1f35;border-bottom:1px solid #dde5ef;padding-bottom:4px;margin:14px 0 8px}
+.pdf-finding{font-size:12px;padding:7px 11px;background:#f7f9fc;border-left:3px solid #0d1f35;margin-bottom:5px;border-radius:0 4px 4px 0;line-height:1.6;color:#1a2b3c}
+.pdf-finding.crit{border-color:#c0392b;background:#fef7f6}
+.pdf-finding.warn{border-color:#d4820a;background:#fef9ec}
+`;
+
+const LABELS = {
+  rate:"Rate & Rhythm",rhythm:"Rhythm",p_waves:"P Waves",
+  pr_interval:"PR Interval",qrs_complex:"QRS Complex",
+  st_t_waves:"ST Segment & T Waves",qt_interval:"QT Interval",
+  axis:"Electrical Axis",interpretation:"Interpretation",
+  differentials:"Differentials",management:"Management"
+};
+
+function Analyzer({ onExport }) {
+  const [imgSrc, setImgSrc] = React.useState(null);
+  const [imgFile, setImgFile] = React.useState(null);
+  const [info, setInfo] = React.useState({ age:"", sex:"M", complaint:"", context:"" });
+  const [report, setReport] = React.useState(null);
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState(null);
+  const [viewTab, setViewTab] = React.useState("original");
+  const fileRef = React.useRef(null);
+  const setI = (k,v) => setInfo(p=>({...p,[k]:v}));
+
+  const handleFile = (e) => {
+    const file = e.target.files?.[0]; if (!file) return;
+    setImgFile(file); setReport(null); setError(null);
+    const reader = new FileReader();
+    reader.onload = ev => setImgSrc(ev.target.result);
+    reader.readAsDataURL(file);
+  };
+
+  const analyze = async () => {
+    if (!imgFile) return;
+    setLoading(true); setReport(null); setError(null);
+    try {
+      const form = new FormData();
+      form.append("image", imgFile);
+      if (info.age) form.append("age", info.age);
+      if (info.sex) form.append("sex", info.sex);
+      if (info.complaint) form.append("complaint", info.complaint);
+      if (info.context) form.append("context", info.context);
+      const res = await fetch(`${BACKEND_URL}/analyze`, { method:"POST", body:form });
+      if (!res.ok) { const e = await res.json(); throw new Error(e.detail || res.statusText); }
+      const result = await res.json();
+      setReport(result);
+    } catch(e) { setError(e.message); }
+    setLoading(false);
+  };
+
+  const f = report?.ecg_findings || {};
+  const isCritical = f.critical_alert && f.critical_alert.toLowerCase() !== "null" && f.critical_alert.toLowerCase() !== "none";
+
+  return React.createElement("div", {style:{display:"grid",gridTemplateColumns:"1fr 340px",gap:18,alignItems:"start"}},
+    React.createElement("div", {style:{display:"flex",flexDirection:"column",gap:14}},
+      React.createElement("div", {className:"card"},
+        React.createElement("div", {className:"ch", style:{paddingBottom:14}},
+          React.createElement("div", {style:{display:"flex",justifyContent:"space-between",alignItems:"center"}},
+            React.createElement("div", null,
+              React.createElement("div", {className:"ct"}, "ECG Upload & Analysis"),
+              React.createElement("div", {className:"cs"}, "Upload a real ECG photo for AI interpretation")
+            ),
+            report && React.createElement("span", {className:`badge ${isCritical?"br":"bg"}`}, isCritical?"⚠ Critical":"✓ Complete")
+          )
+        ),
+        React.createElement("div", {className:"cb", style:{paddingTop:0}},
+          React.createElement("div", {
+            className:`uzone ${imgSrc?"filled":""}`,
+            onClick:()=>!imgSrc&&fileRef.current?.click()
+          },
+            React.createElement("input", {ref:fileRef,type:"file",accept:"image/*",style:{display:"none"},onChange:handleFile}),
+            imgSrc ? React.createElement("div", null,
+              React.createElement("div", {style:{display:"flex",gap:0,borderBottom:"2px solid #dde5ef",marginBottom:10}},
+                ["original","Digital Reconstruction"].map((lbl,i)=>{
+                  const id = i===0?"original":"recon";
+                  return React.createElement("div", {
+                    key:id,
+                    style:{padding:"8px 16px",fontSize:13,fontWeight:500,color:viewTab===id?"#0d1f35":"#7a95a8",cursor:"pointer",borderBottom:`2px solid ${viewTab===id?"#0d1f35":"transparent"}`,marginBottom:-2},
+                    onClick:()=>setViewTab(id)
+                  }, lbl);
+                }),
+                React.createElement("button", {
+                  className:"btn btn-o btn-sm",
+                  style:{marginLeft:"auto",alignSelf:"center"},
+                  onClick:()=>{setImgSrc(null);setImgFile(null);setReport(null);setError(null);}
+                }, "Replace")
+              ),
+              viewTab==="original"
+                ? React.createElement("img", {src:imgSrc,style:{width:"100%",maxHeight:320,objectFit:"contain",borderRadius:7,border:"1px solid #dde5ef"}})
+                : React.createElement("div", {style:{textAlign:"center",padding:"20px",color:"#7a95a8",fontFamily:"'DM Mono',monospace",fontSize:12}}, "Digital reconstruction coming in next update")
+            ) : React.createElement("div", null,
+              React.createElement("div", {style:{fontSize:36,marginBottom:10}}, "📋"),
+              React.createElement("div", {style:{fontWeight:600,fontSize:15,marginBottom:5}}, "Upload a real ECG image"),
+              React.createElement("div", {style:{fontSize:12,color:"#7a95a8",lineHeight:1.7}},
+                "Tap to choose a photo · JPG or PNG", React.createElement("br"),
+                "Works with phone photos of paper ECGs", React.createElement("br"),
+                React.createElement("span", {style:{color:"#0d1f35",fontWeight:500}}, "Claude Vision reads the actual waveform")
+              )
+            )
+          ),
+          React.createElement("div", {style:{display:"grid",gridTemplateColumns:"1fr 1fr 70px 55px",gap:10,marginTop:12}},
+            React.createElement("div", null,
+              React.createElement("label", {className:"lbl"}, "Chief Complaint"),
+              React.createElement("select", {className:"inp",value:info.complaint,onChange:e=>setI("complaint",e.target.value)},
+                React.createElement("option", {value:""}, "Select…"),
+                ["Chest Pain","Palpitations","Syncope","Dyspnoea","Heart Failure","Pre-op","Cardiac Arrest","Dizziness","Shock","Routine"].map(c=>React.createElement("option",{key:c},c))
+              )
+            ),
+            React.createElement("div", null,
+              React.createElement("label", {className:"lbl"}, "Clinical Context"),
+              React.createElement("input", {className:"inp",value:info.context,placeholder:"e.g. known HTN…",onChange:e=>setI("context",e.target.value)})
+            ),
+            React.createElement("div", null,
+              React.createElement("label", {className:"lbl"}, "Age"),
+              React.createElement("input", {className:"inp",type:"number",value:info.age,placeholder:"yrs",onChange:e=>setI("age",e.target.value)})
+            ),
+            React.createElement("div", null,
+              React.createElement("label", {className:"lbl"}, "Sex"),
+              React.createElement("select", {className:"inp",value:info.sex,onChange:e=>setI("sex",e.target.value)},
+                React.createElement("option",null,"M"), React.createElement("option",null,"F")
+              )
+            )
+          )
+        )
+      ),
+      error && React.createElement("div", {className:"card fu",style:{borderColor:"#c0392b"}},
+        React.createElement("div", {className:"cb"},
+          React.createElement("div", {style:{fontWeight:600,color:"#c0392b",marginBottom:6,fontSize:13}}, "Analysis Error"),
+          React.createElement("div", {style:{fontSize:13,color:"#7a1a1a",lineHeight:1.6}}, error)
+        )
+      ),
+      report && React.createElement("div", {className:"card fu"},
+        React.createElement("div", {className:"ch",style:{paddingBottom:12}},
+          React.createElement("div", {style:{display:"flex",justifyContent:"space-between",alignItems:"center"}},
+            React.createElement("div", {className:"ct",style:{fontSize:14}}, "ECG Findings"),
+            React.createElement("div", {style:{display:"flex",gap:6}},
+              React.createElement("span", {className:`badge ${report.confidence==="HIGH"?"bg":report.confidence==="LOW"?"br":"ba"}`}, report.confidence+" confidence"),
+              React.createElement("span", {className:`badge ${report.image_quality==="GOOD"?"bg":report.image_quality==="POOR"?"br":"ba"}`}, report.image_quality+" quality")
+            )
+          )
+        ),
+        React.createElement("div", {className:"cb",style:{paddingTop:0,maxHeight:400,overflowY:"auto"}},
+          Object.entries(f)
+            .filter(([k])=>!["critical_alert","interpretation","confidence","image_quality","differentials"].includes(k))
+            .map(([k,v])=>v&&React.createElement("div",{key:k,className:"rb fu"},
+              React.createElement("div",{className:"rlbl"},LABELS[k]||k),
+              React.createElement("div",{className:"rtxt"},v)
+            )),
+          f.differentials?.length>0 && React.createElement("div",{className:"rb rb-hi fu"},
+            React.createElement("div",{className:"rlbl"},"Differentials"),
+            React.createElement("div",{className:"rtxt"},Array.isArray(f.differentials)?f.differentials.join(" · "):f.differentials)
+          ),
+          f.management && React.createElement("div",{className:"rb rb-warn fu"},
+            React.createElement("div",{className:"rlbl"},"Management"),
+            React.createElement("div",{className:"rtxt"},f.management)
+          )
+        )
+      ),
+      report && React.createElement("button",{className:"btn btn-g fu",style:{width:"100%",justifyContent:"center"},onClick:()=>onExport({report,imgSrc,info})},
+        "📄 Export PDF Report"
+      )
+    ),
+    React.createElement("div", {style:{display:"flex",flexDirection:"column",gap:12}},
+      React.createElement("div", {className:"card"},
+        React.createElement("div", {className:"ch"},
+          React.createElement("div", {className:"ct",style:{fontSize:14}}, "AI Analysis"),
+          React.createElement("div", {className:"cs"}, "Powered by Claude Vision · Server-side")
+        ),
+        React.createElement("div", {className:"cb"},
+          React.createElement("button", {
+            className:"btn btn-n",
+            style:{width:"100%",justifyContent:"center",marginBottom:12},
+            onClick:analyze, disabled:loading||!imgFile
+          },
+            loading ? React.createElement(React.Fragment,null,React.createElement("span",{className:"spinr"})," Analyzing ECG…") : "🔬 Analyze Uploaded ECG"
+          ),
+          loading && React.createElement("div", {style:{paddingTop:4}},
+            ["Sending image to server…","Claude Vision reading ECG…","Measuring intervals…","Generating clinical report…"].map((s,i)=>
+              React.createElement("div",{key:i,className:"fu",style:{fontSize:11,color:"#4a6277",padding:"4px 0",fontFamily:"'DM Mono',monospace",animationDelay:`${i*0.2}s`,opacity:0}},
+                React.createElement("span",{style:{color:"#0d1f35"}},"→")," ",s
+              )
+            )
+          ),
+          !loading && !imgFile && React.createElement("div",{style:{textAlign:"center",fontSize:12,color:"#7a95a8",fontFamily:"'DM Mono',monospace"}}, "Upload an ECG image first")
+        )
+      ),
+      report && React.createElement(React.Fragment, null,
+        React.createElement("div", {className:`${isCritical?"crit-box":"ok-box"} fu`},
+          React.createElement("div", {className:"alert-icon",style:{background:isCritical?"#c0392b":"#1a7a4a"}}, isCritical?"!":"✓"),
+          React.createElement("div", null,
+            React.createElement("div", {style:{fontWeight:600,fontSize:13,color:isCritical?"#c0392b":"#1a7a4a",marginBottom:3}}, isCritical?"Critical Finding":"Primary Interpretation"),
+            React.createElement("div", {style:{fontSize:12,lineHeight:1.6,color:isCritical?"#7a1a1a":"#1a3c2a"}}, isCritical?f.critical_alert:f.interpretation)
+          )
+        ),
+        React.createElement("div", {className:"card fu"},
+          React.createElement("div", {className:"ch"}, React.createElement("div", {className:"ct",style:{fontSize:14}}, "Report Info")),
+          React.createElement("div", {className:"cb"},
+            [["Report ID",report.report_id],["Time",new Date(report.timestamp).toLocaleString()],["Patient",report.patient_info.age?`${report.patient_info.age}y ${report.patient_info.sex}`:"—"],["Complaint",report.patient_info.complaint||"—"],["Confidence",report.confidence],["Image Quality",report.image_quality]].map(([k,v])=>
+              React.createElement("div",{key:k,style:{display:"grid",gridTemplateColumns:"110px 1fr",gap:6,padding:"6px 0",borderBottom:"1px solid #f0f4f8",fontSize:12}},
+                React.createElement("span",{style:{fontFamily:"'DM Mono',monospace",fontSize:10,color:"#7a95a8"}},k),
+                React.createElement("span",{style:{color:"#1a2b3c",fontWeight:500}},v)
+              )
+            )
+          )
+        )
+      )
+    )
+  );
+}
+
+function PDFExport({ data, onBack }) {
+  const pageRef = React.useRef(null);
+  const { report, imgSrc, info } = data;
+  const f = report?.ecg_findings || {};
+  const now = new Date().toLocaleString("en-GB",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"});
+  const isCritical = f.critical_alert && f.critical_alert.toLowerCase()!=="null" && f.critical_alert.toLowerCase()!=="none";
+
+  const print = () => {
+    const w = window.open("","_blank");
+    w.document.write(`<!DOCTYPE html><html><head><title>CardioLens Report ${report.report_id}</title>
+    <style>body{font-family:'DM Sans',sans-serif;margin:32px;color:#1a2b3c;font-size:13px}
+    .header{display:flex;justify-content:space-between;border-bottom:2px solid #0d1f35;padding-bottom:14px;margin-bottom:16px}
+    .st{font-family:monospace;font-size:9px;text-transform:uppercase;letter-spacing:0.1em;color:#0d1f35;border-bottom:1px solid #dde5ef;padding-bottom:4px;margin:14px 0 8px}
+    .row{display:grid;grid-template-columns:140px 1fr;gap:6px;padding:4px 0;border-bottom:1px solid #f0f4f8;font-size:12px}
+    .key{color:#7a95a8;font-family:monospace;font-size:10px}.val{color:#1a2b3c;font-weight:500}
+    .finding{font-size:12px;padding:7px 11px;background:#f7f9fc;border-left:3px solid #0d1f35;margin-bottom:5px;border-radius:0 4px 4px 0;line-height:1.6}
+    .crit-banner{background:#fdecea;border:2px solid #c0392b;border-radius:8px;padding:12px 16px;margin-bottom:16px}
+    img{max-width:100%;border-radius:6px;border:1px solid #dde5ef;margin-bottom:12px}
+    .footer{margin-top:20px;padding-top:12px;border-top:1px solid #dde5ef;display:flex;justify-content:space-between;font-size:9px;color:#7a95a8;font-family:monospace}
+    @media print{button{display:none}}</style></head><body>
+    <div class="header"><div><strong style="font-size:20px;color:#0d1f35">🫀 CardioLens</strong><br><span style="font-size:9px;color:#7a95a8;font-family:monospace;text-transform:uppercase;letter-spacing:0.08em">ECG Intelligence Platform · Educational & Research Use Only</span><br><span style="color:#c0392b;font-size:11px;font-weight:600">⚠ Not a substitute for clinical judgment</span></div><div style="text-align:right"><span style="font-family:monospace;font-size:10px;color:#7a95a8">Report ID</span><br><strong style="font-size:18px;color:#0d1f35">${report.report_id}</strong><br><span style="font-family:monospace;font-size:10px;color:#7a95a8">${now}</span></div></div>
+    ${isCritical?`<div class="crit-banner"><strong style="color:#c0392b">⚠ CRITICAL FINDING</strong><br><span style="font-size:12px;color:#7a1a1a">${f.critical_alert}</span></div>`:""}
+    <div class="st">Patient & Clinical Information</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:12px">
+      ${[["Patient",info.age?`${info.age}y ${info.sex}`:"—"],["Complaint",info.complaint||"—"],["Context",info.context||"—"],["Analysis","Real ECG — Claude Vision"]].map(([k,v])=>`<div style="padding:8px;background:#f7f9fc;border-radius:6px"><div class="key">${k}</div><div class="val" style="font-size:12px;margin-top:2px">${v}</div></div>`).join("")}
+    </div>
+    ${imgSrc?`<div class="st">Original ECG</div><img src="${imgSrc}" style="max-height:240px;object-fit:contain">`:""} 
+    ${f.interpretation?`<div class="st">Primary Interpretation</div><div class="finding" style="font-weight:600;font-size:13px;background:#eef3fb;border-color:#0d1f35">${f.interpretation}</div>`:""}
+    <div class="st">ECG Analysis</div>
+    ${["rate","rhythm","p_waves","pr_interval","qrs_complex","st_t_waves","qt_interval","axis"].map(k=>f[k]?`<div class="row"><span class="key">${k.replace(/_/g," ").toUpperCase()}</span><span class="val" style="font-weight:400">${f[k]}</span></div>`:"").join("")}
+    ${f.differentials?.length?`<div class="st">Differentials</div><div class="finding" style="border-color:#d4820a;background:#fef9ec">${Array.isArray(f.differentials)?f.differentials.join(" · "):f.differentials}</div>`:""}
+    ${f.management?`<div class="st">Management</div><div class="finding">${f.management}</div>`:""}
+    <div class="footer"><span>CardioLens · Educational Use Only · Not for Clinical Decision Making</span><span>Generated ${now} · Report ${report.report_id}</span></div>
+    </body></html>`);
+    w.document.close(); setTimeout(()=>w.print(),600);
+  };
+
+  return React.createElement("div", {className:"fu",style:{display:"flex",flexDirection:"column",gap:16}},
+    React.createElement("div", {style:{display:"flex",justifyContent:"space-between",alignItems:"center"}},
+      React.createElement("div", null,
+        React.createElement("div", {style:{fontFamily:"'Fraunces',serif",fontSize:22,fontWeight:500}}, "PDF Report Preview"),
+        React.createElement("div", {style:{fontSize:13,color:"#7a95a8",marginTop:2}}, "For educational and research use only")
+      ),
+      React.createElement("div", {style:{display:"flex",gap:10}},
+        React.createElement("button", {className:"btn btn-o btn-sm",onClick:onBack}, "← Back"),
+        React.createElement("button", {className:"btn btn-g",onClick:print}, "🖨 Print / Save PDF")
+      )
+    ),
+    React.createElement("div", {ref:pageRef,className:"pdf-page"},
+      React.createElement("div", {style:{display:"flex",justifyContent:"space-between",alignItems:"flex-start",borderBottom:"2px solid #0d1f35",paddingBottom:14,marginBottom:16}},
+        React.createElement("div", null,
+          React.createElement("div", {style:{fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:20,color:"#0d1f35"}}, "🫀 CardioLens"),
+          React.createElement("div", {style:{fontFamily:"'DM Mono',monospace",fontSize:9,color:"#7a95a8",marginTop:2,textTransform:"uppercase",letterSpacing:"0.08em"}}, "ECG Intelligence Platform · Educational & Research Use Only"),
+          React.createElement("div", {style:{marginTop:8,fontSize:11,color:"#c0392b",fontWeight:600}}, "⚠ Not a substitute for clinical judgment")
+        ),
+        React.createElement("div", {style:{textAlign:"right"}},
+          React.createElement("div", {style:{fontFamily:"'DM Mono',monospace",fontSize:10,color:"#7a95a8"}}, "Report ID"),
+          React.createElement("div", {style:{fontFamily:"'DM Mono',monospace",fontSize:18,fontWeight:500,color:"#0d1f35"}}, report.report_id),
+          React.createElement("div", {style:{fontFamily:"'DM Mono',monospace",fontSize:10,color:"#7a95a8",marginTop:4}}, now)
+        )
+      ),
+      isCritical && React.createElement("div", {style:{background:"#fdecea",border:"2px solid #c0392b",borderRadius:8,padding:"12px 16px",marginBottom:16}},
+        React.createElement("div", {style:{fontWeight:700,fontSize:13,color:"#c0392b",marginBottom:3}}, "⚠ CRITICAL FINDING"),
+        React.createElement("div", {style:{fontSize:12,color:"#7a1a1a"}}, f.critical_alert)
+      ),
+      f.interpretation && React.createElement(React.Fragment, null,
+        React.createElement("div", {className:"pdf-st"}, "Primary Interpretation"),
+        React.createElement("div", {className:"pdf-finding",style:{fontWeight:600,fontSize:13,background:"#eef3fb",borderColor:"#0d1f35"}}, f.interpretation)
+      ),
+      imgSrc && React.createElement(React.Fragment, null,
+        React.createElement("div", {className:"pdf-st"}, "Original ECG"),
+        React.createElement("img", {src:imgSrc,style:{width:"100%",maxHeight:240,objectFit:"contain",marginBottom:12,borderRadius:6,border:"1px solid #dde5ef"}})
+      ),
+      React.createElement("div", {className:"pdf-st"}, "ECG Analysis"),
+      ["rate","rhythm","p_waves","pr_interval","qrs_complex","st_t_waves","qt_interval","axis"].map(k=>f[k]&&
+        React.createElement("div",{key:k,style:{display:"grid",gridTemplateColumns:"140px 1fr",gap:6,padding:"4px 0",borderBottom:"1px solid #f0f4f8",fontSize:12}},
+          React.createElement("span",{style:{fontFamily:"'DM Mono',monospace",fontSize:10,color:"#7a95a8"}},k.replace(/_/g," ").toUpperCase()),
+          React.createElement("span",{style:{color:"#1a2b3c",fontWeight:400}},f[k])
+        )
+      ),
+      f.differentials?.length>0 && React.createElement(React.Fragment,null,
+        React.createElement("div",{className:"pdf-st"},"Differentials"),
+        React.createElement("div",{className:"pdf-finding warn"},Array.isArray(f.differentials)?f.differentials.join(" · "):f.differentials)
+      ),
+      f.management && React.createElement(React.Fragment,null,
+        React.createElement("div",{className:"pdf-st"},"Management"),
+        React.createElement("div",{className:"pdf-finding"},f.management)
+      ),
+      React.createElement("div",{style:{marginTop:20,paddingTop:12,borderTop:"1px solid #dde5ef",display:"flex",justifyContent:"space-between",fontFamily:"'DM Mono',monospace",fontSize:9,color:"#7a95a8"}},
+        React.createElement("span",null,"CardioLens · Educational Use Only · Not for Clinical Decision Making"),
+        React.createElement("span",null,`Generated ${now} · Report ${report.report_id}`)
+      )
+    )
+  );
+}
+
+const NAV=[
+  {id:"analyzer",icon:"🔬",label:"ECG Analyzer",group:"Clinical"},
+  {id:"learn",icon:"📚",label:"Tutorials",group:"Education"},
+  {id:"quiz",icon:"🎯",label:"Clinical Quiz",group:"Education"},
+];
+const TITLES={analyzer:"ECG Analyzer",learn:"Tutorials",quiz:"Clinical Quiz",pdf:"PDF Report"};
+const SUBS={
+  analyzer:"Upload a real ECG photo — Claude Vision reads and interprets it",
+  learn:"Step-by-step tutorials for systematic ECG interpretation",
+  quiz:"Test your clinical decision-making with annotated cases",
+};
+
+function App() {
+  const [active, setActive] = React.useState("analyzer");
+  const [pdfData, setPdfData] = React.useState(null);
+  const [backendOk, setBackendOk] = React.useState(null);
+
+  React.useEffect(()=>{
+    fetch(`${BACKEND_URL}/health`)
+      .then(r=>r.ok?setBackendOk(true):setBackendOk(false))
+      .catch(()=>setBackendOk(false));
+  },[]);
+
+  const groups=[...new Set(NAV.map(n=>n.group))];
+  const page = pdfData?"pdf":active;
+
+  return React.createElement("div", {className:"shell"},
+    React.createElement("aside", {className:"sb"},
+      React.createElement("div", {className:"sb-logo"},
+        React.createElement("div", {className:"sb-icon"}, "🫀"),
+        React.createElement("div", null,
+          React.createElement("div", {className:"sb-title"}, "CardioLens"),
+          React.createElement("div", {className:"sb-sub"}, "ECG Platform")
+        )
+      ),
+      React.createElement("nav", {className:"sb-nav"},
+        groups.map(g=>React.createElement("div",{key:g},
+          React.createElement("div",{className:"sb-grp"},g),
+          NAV.filter(n=>n.group===g).map(n=>
+            React.createElement("button",{key:n.id,className:`sb-btn ${active===n.id&&!pdfData?"on":""}`,onClick:()=>{setActive(n.id);setPdfData(null)}},
+              React.createElement("span",{className:"sb-ico"},n.icon),n.label,React.createElement("span",{className:"sdot"})
+            )
+          )
+        ))
+      ),
+      React.createElement("div", {className:"sb-foot"},
+        React.createElement("div", {style:{display:"flex",alignItems:"center",gap:8,marginBottom:8}},
+          React.createElement("div", {className:`ldot ${backendOk===false?"off":""}`}),
+          React.createElement("div", null,
+            React.createElement("div", {style:{fontFamily:"'DM Mono',monospace",fontSize:9,color:"rgba(255,255,255,0.48)"}},
+              backendOk===null?"CHECKING…":backendOk?"BACKEND ONLINE":"BACKEND OFFLINE"
+            ),
+            React.createElement("div", {style:{fontFamily:"'DM Mono',monospace",fontSize:8,color:"rgba(255,255,255,0.28)",marginTop:1}}, "claude-opus-4-5 · vision")
+          )
+        ),
+        React.createElement("div", {style:{fontSize:9,color:"rgba(255,255,255,0.2)",fontFamily:"'DM Mono',monospace",lineHeight:1.55}}, "Educational use only.")
+      )
+    ),
+    React.createElement("div", {className:"main"},
+      React.createElement("header", {className:"topbar"},
+        React.createElement("div", {className:"bc"},
+          React.createElement("span",null,"CardioLens"),
+          React.createElement("span",{style:{color:"#dde5ef"}},"›"),
+          React.createElement("span",{className:"bca"},TITLES[page])
+        ),
+        React.createElement("div",{style:{flex:1}}),
+        React.createElement("span",{style:{fontSize:10,color:"#7a95a8",fontFamily:"'DM Mono',monospace"}},"Beta v1.0"),
+        React.createElement("div",{style:{width:1,height:14,background:"#dde5ef",margin:"0 8px"}}),
+        React.createElement("button",{className:"btn btn-r btn-sm",onClick:()=>{setActive("analyzer");setPdfData(null)}},"+ New Case")
+      ),
+      React.createElement("div", {className:"body"},
+        !pdfData && React.createElement("div",{style:{marginBottom:18}},
+          React.createElement("div",{style:{fontFamily:"'Fraunces',serif",fontSize:22,fontWeight:500,color:"#1a2b3c"}},TITLES[active]),
+          React.createElement("div",{style:{fontSize:13,color:"#4a6277",marginTop:3}},SUBS[active])
+        ),
+        pdfData
+          ? React.createElement(PDFExport,{data:pdfData,onBack:()=>setPdfData(null)})
+          : active==="analyzer" ? React.createElement(Analyzer,{onExport:d=>setPdfData(d)})
+          : React.createElement("div",{style:{padding:"40px 20px",textAlign:"center",color:"#7a95a8"}},active==="learn"?"Tutorials coming soon":"Quiz coming soon")
+      )
+    )
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(React.createElement(App));
+</script>
+</body>
+</html>
