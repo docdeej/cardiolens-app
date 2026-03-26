@@ -113,9 +113,40 @@ const CATEGORIES = ["Rhythm disorders","Ischaemia & ACS","Conduction","Hypertrop
 const DIFFICULTY = ["Easy","Medium","Hard","Expert"];
 
 const LABELS = {
-  rate:"Rate",rhythm:"Rhythm",p_waves:"P Waves",pr_interval:"PR Interval",
-  qrs_complex:"QRS Complex",st_t_waves:"ST & T Waves",qt_interval:"QT Interval",
-  axis:"Electrical Axis",stemi_territory:"STEMI Territory",other_findings:"Other Findings"
+  step1_emergency:"⚡ Emergency Screen",
+  rate:"Rate",
+  rhythm:"Rhythm",
+  p_waves:"P Waves",
+  pr_interval:"PR Interval",
+  qrs_complex:"QRS Complex",
+  st_t_waves:"ST & T Waves",
+  qt_interval:"QT / QTc",
+  axis:"Electrical Axis",
+  stemi_territory:"STEMI Territory",
+  stemi_equivalents:"STEMI Equivalents",
+  reciprocal_changes:"Reciprocal Changes",
+  conduction:"Conduction",
+  ectopy:"Ectopy",
+  other_findings:"Other Findings"
+};
+
+// Order to display findings sections
+const FINDING_ORDER = [
+  "step1_emergency","rate","rhythm","p_waves","pr_interval","qrs_complex",
+  "st_t_waves","qt_interval","axis","stemi_territory","stemi_equivalents",
+  "reciprocal_changes","conduction","ectopy","other_findings"
+];
+
+// Style each section appropriately
+const sectionStyle = (k, v) => {
+  if (k === "step1_emergency" && v && v !== "CLEAR") return "rb rb-red";
+  if (k === "step1_emergency") return "rb rb-green";
+  if (k === "stemi_territory" && v && v !== "None" && v !== "Unable to assess") return "rb rb-red";
+  if (k === "stemi_equivalents" && v && v !== "None") return "rb rb-red";
+  if (k === "reciprocal_changes" && v && v !== "None") return "rb rb-amber";
+  if (k === "conduction" && v && v !== "Normal") return "rb rb-amber";
+  if (k === "ectopy" && v && v !== "None") return "rb rb-amber";
+  return "rb";
 };
 
 // ─── Shared Upload Zone ────────────────────────────────────────
@@ -141,10 +172,71 @@ function UploadZone({ imgSrc, onFile, onClear, label="Upload ECG image" }) {
   );
 }
 
+// ─── Helper: flatten nested object to readable string ──────────
+function flattenVal(v) {
+  if (v === null || v === undefined || v === "null" || v === "none" || v === "None") return null;
+  if (Array.isArray(v)) {
+    const filtered = v.filter(x => x && x !== "null" && x !== "none");
+    return filtered.length ? filtered.join(" · ") : null;
+  }
+  if (typeof v === "object") {
+    // Render object as labelled rows
+    return Object.entries(v)
+      .filter(([,val]) => val !== null && val !== undefined && val !== "null" && val !== "none" && val !== false)
+      .map(([k,val]) => `${k.replace(/_/g," ")}: ${typeof val === "object" ? JSON.stringify(val) : String(val)}`)
+      .join(" | ");
+  }
+  return String(v);
+}
+
 // ─── Findings Display ──────────────────────────────────────────
 function FindingsPanel({ findings, confidence, imageQuality }) {
   const f = findings || {};
   const isCrit = f.critical_alert && f.critical_alert !== "null" && f.critical_alert !== "none" && f.critical_alert !== null;
+
+  // Sections to render in clinical order with their styles
+  const sections = [
+    { key:"step1_emergency", label:"⚡ Emergency Screen", style: v => v && !v.startsWith("CLEAR") ? "rb rb-red" : "rb rb-green" },
+    { key:"rate", label:"Rate", style: () => "rb" },
+    { key:"rhythm", label:"Rhythm", style: () => "rb" },
+    { key:"p_waves", label:"P Waves", style: () => "rb" },
+    { key:"pr_interval", label:"PR Interval", style: v => {
+      const d = typeof v === "object" ? v : {};
+      return d.av_block && d.av_block !== "none" ? "rb rb-amber" : "rb";
+    }},
+    { key:"qrs_complex", label:"QRS Complex", style: v => {
+      const d = typeof v === "object" ? v : {};
+      return d.morphology && d.morphology !== "normal" ? "rb rb-amber" : "rb";
+    }},
+    { key:"j_point", label:"J Point", style: v => v && !v.startsWith("isoelectric") ? "rb rb-red" : "rb" },
+    { key:"st_segment", label:"ST Segment", style: v => {
+      const d = typeof v === "object" ? v : {};
+      return d.elevation && d.elevation !== "none" ? "rb rb-red" : d.depression && d.depression !== "none" ? "rb rb-amber" : "rb";
+    }},
+    { key:"t_waves", label:"T Waves", style: v => {
+      const d = typeof v === "object" ? v : {};
+      return d.hyperacute_present ? "rb rb-red" : d.inversions && d.inversions !== "none" ? "rb rb-amber" : "rb";
+    }},
+    { key:"qt_interval", label:"QT / QTc", style: v => {
+      const d = typeof v === "object" ? v : {};
+      return d.assessment === "prolonged" ? "rb rb-red" : "rb";
+    }},
+    { key:"stemi_territory", label:"STEMI Territory", style: v => v && v !== "None" && v !== "Unable to assess" ? "rb rb-red" : "rb" },
+    { key:"stemi_equivalents", label:"STEMI Equivalents", style: v => v && v !== "None" ? "rb rb-red" : null },
+    { key:"reciprocal_changes", label:"Reciprocal Changes", style: v => v && v !== "None" ? "rb rb-amber" : null },
+    { key:"conduction", label:"Conduction", style: v => {
+      const d = typeof v === "object" ? v : {};
+      const bad = (d.pr_abnormality && d.pr_abnormality !== "none") || (d.bbb && d.bbb !== "none");
+      return bad ? "rb rb-amber" : "rb";
+    }},
+    { key:"ectopy", label:"Ectopy", style: v => {
+      const d = typeof v === "object" ? v : {};
+      return d.clinical_significance === "high risk" ? "rb rb-red" : d.pvcs && d.pvcs !== "none" ? "rb rb-amber" : null;
+    }},
+    { key:"additional_findings", label:"Additional Findings", style: () => "rb" },
+    { key:"other_findings", label:"Other Findings", style: () => "rb" },
+  ];
+
   return (
     <div>
       {isCrit && (
@@ -165,34 +257,39 @@ function FindingsPanel({ findings, confidence, imageQuality }) {
           </div>
         </div>
       )}
-      <div style={{maxHeight:360,overflowY:"auto"}}>
-        {Object.entries(f)
-          .filter(([k])=>!["critical_alert","interpretation","confidence","image_quality","differentials","management","findings_limited_by_quality","other_findings","stemi_territory"].includes(k))
-          .map(([k,v])=> v && v !== "null" && (
-            <div key={k} className="rb">
-              <div className="rlbl">{LABELS[k]||k}</div>
-              <div className="rtxt">{Array.isArray(v)?v.join(", "):typeof v==="object"?JSON.stringify(v):String(v)}</div>
+
+      <div style={{maxHeight:520,overflowY:"auto"}}>
+        {sections.map(({key, label, style}) => {
+          const v = f[key];
+          if (v === null || v === undefined) return null;
+          const displayVal = flattenVal(v);
+          if (!displayVal) return null;
+          const cls = typeof style === "function" ? style(v) : style;
+          if (!cls) return null;
+          return (
+            <div key={key} className={cls}>
+              <div className="rlbl">{label}</div>
+              <div className="rtxt" style={{fontSize:12.5}}>{displayVal}</div>
             </div>
-          ))
-        }
-        {f.other_findings?.length > 0 && (
-          <div className="rb"><div className="rlbl">Other Findings</div>
-            <div className="rtxt">{Array.isArray(f.other_findings)?f.other_findings.join(" · "):f.other_findings}</div>
-          </div>
-        )}
-        {f.stemi_territory && f.stemi_territory !== "None" && f.stemi_territory !== "Unable to assess" && (
-          <div className="rb rb-red"><div className="rlbl">STEMI Territory</div>
-            <div className="rtxt">{f.stemi_territory}</div>
-          </div>
-        )}
+          );
+        })}
+
         {f.differentials?.length > 0 && (
-          <div className="rb rb-blue"><div className="rlbl">Differentials</div>
-            <div className="rtxt">{Array.isArray(f.differentials)?f.differentials.join(" · "):f.differentials}</div>
+          <div className="rb rb-blue">
+            <div className="rlbl">Differentials</div>
+            <div className="rtxt">{Array.isArray(f.differentials) ? f.differentials.join(" · ") : f.differentials}</div>
           </div>
         )}
         {f.management && (
-          <div className="rb rb-amber"><div className="rlbl">Management</div>
+          <div className="rb rb-amber">
+            <div className="rlbl">Management</div>
             <div className="rtxt">{f.management}</div>
+          </div>
+        )}
+        {f.findings_limited_by_quality?.length > 0 && (
+          <div className="rb" style={{opacity:0.65}}>
+            <div className="rlbl">Limited by Image Quality</div>
+            <div className="rtxt" style={{fontSize:11.5}}>{f.findings_limited_by_quality.join(" · ")}</div>
           </div>
         )}
       </div>
