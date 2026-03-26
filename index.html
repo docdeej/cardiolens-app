@@ -392,7 +392,7 @@ function Analyzer({ onExport }) {
               </div>
             </div>
             <div className="cb" style={{paddingTop:0}}>
-              <FindingsPanel findings={f} confidence={report.confidence} imageQuality={report.image_quality}/>
+              <ClinicalReport findings={f} imageQuality={report.image_quality}/>
               {/* Verify + Save bar */}
               {!saved && (
                 <div className="verify-bar">
@@ -751,339 +751,401 @@ function Library() {
   );
 }
 
-// ─── ECG RECONSTRUCTION ENGINE ────────────────────────────────
-// Classifies each lead based on AI findings and applies colour overlays
+// ─── ECG HEATMAP OVERLAY ENGINE ───────────────────────────────
+// Classifies each lead and returns overlay config for heatmap rendering
 function classifyLead(leadName, digitized, analysis) {
   const f = analysis?.ecg_findings || {};
-  const stemiTerritory = f.stemi_territory || "";
+  const stemiTerritory = (f.stemi_territory || "").toLowerCase();
   const stemiEquiv = (f.stemi_equivalents || "").toLowerCase();
   const stSeg = f.st_segment || {};
   const tWaves = f.t_waves || {};
   const conduction = f.conduction || {};
-  const ectopy = f.ectopy || {};
-  const leadFindings = (digitized?.lead_findings || {})[leadName] || "";
-  const lf = leadFindings.toLowerCase();
+  const leadFinding = ((digitized?.lead_findings || {})[leadName] || "").toLowerCase();
 
-  // STEMI leads — red
-  const stemiLeadMap = {
-    "Anterior (LAD)": ["V1","V2","V3","V4"],
-    "Septal": ["V1","V2"],
-    "Lateral (LCx)": ["I","aVL","V5","V6"],
-    "Inferior (RCA)": ["II","III","aVF"],
-    "Anterolateral": ["I","aVL","V1","V2","V3","V4"],
-    "Inferolateral": ["II","III","aVF","V5","V6"],
-    "Posterior": ["V1","V2","V3"],
-    "Right ventricular": ["V1"],
+  // STEMI territory mapping
+  const stemiLeads = {
+    "anterior": ["V1","V2","V3","V4"],
+    "septal": ["V1","V2"],
+    "lateral": ["I","aVL","V5","V6"],
+    "inferior": ["II","III","aVF"],
+    "anterolateral": ["I","aVL","V1","V2","V3","V4"],
+    "inferolateral": ["II","III","aVF","V5","V6"],
+    "posterior": ["V1","V2","V3"],
+    "right ventricular": ["V1"],
   };
-  for (const [territory, leads] of Object.entries(stemiLeadMap)) {
+
+  for (const [territory, leads] of Object.entries(stemiLeads)) {
     if (stemiTerritory.includes(territory) && leads.includes(leadName)) {
-      return { color: "#c0392b", bg: "rgba(192,57,43,0.08)", label: "STEMI", severity: 4 };
+      return { type:"stemi", color:"rgba(192,57,43,0.55)", border:"#c0392b", label:"STEMI", confidence: 85 };
     }
   }
 
-  // STEMI equivalent leads
+  // STEMI equivalent
   if (stemiEquiv && stemiEquiv !== "none") {
     if ((stemiEquiv.includes("anterior") || stemiEquiv.includes("lad") || stemiEquiv.includes("hyperacute")) &&
         ["V1","V2","V3","V4"].includes(leadName)) {
-      return { color: "#c0392b", bg: "rgba(192,57,43,0.08)", label: "STEMI equiv", severity: 4 };
+      return { type:"stemi_equiv", color:"rgba(192,57,43,0.45)", border:"#c0392b", label:"Equiv", confidence: 72 };
     }
   }
 
-  // Ischaemia / ST depression / T inversion — amber
-  const stElevDesc = typeof stSeg === "object" ? (stSeg.elevation || "") : String(stSeg);
-  const stDepDesc = typeof stSeg === "object" ? (stSeg.depression || "") : "";
-  const tInvDesc = typeof tWaves === "object" ? (tWaves.inversions || "") : "";
-
-  if (lf.includes("st elevation") || lf.includes("ste") || lf.includes("elevated st")) {
-    return { color: "#c0392b", bg: "rgba(192,57,43,0.08)", label: "STE", severity: 3 };
+  // Ischaemia / STD / T inversion
+  if (leadFinding.includes("st depression") || leadFinding.includes("std") ||
+      leadFinding.includes("t wave inversion") || leadFinding.includes("t inversion") ||
+      leadFinding.includes("inverted t") || leadFinding.includes("depression")) {
+    return { type:"ischaemia", color:"rgba(212,130,10,0.45)", border:"#d4820a", label:"Ischaemia", confidence: 60 };
   }
-  if (lf.includes("st depression") || lf.includes("std") || lf.includes("depressed st") ||
-      lf.includes("t wave inversion") || lf.includes("t inversion") || lf.includes("inverted t")) {
-    return { color: "#d4820a", bg: "rgba(212,130,10,0.08)", label: "Ischaemia", severity: 2 };
-  }
-  if (lf.includes("hyperacute") || lf.includes("tall t") || lf.includes("peaked t")) {
-    return { color: "#c0392b", bg: "rgba(192,57,43,0.08)", label: "Hyperacute T", severity: 3 };
+  if (leadFinding.includes("hyperacute") || leadFinding.includes("tall t")) {
+    return { type:"stemi_equiv", color:"rgba(192,57,43,0.45)", border:"#c0392b", label:"Hyperacute T", confidence: 68 };
   }
 
-  // Conduction issues — blue
+  // Conduction
   const bbb = typeof conduction === "object" ? (conduction.bbb || "") : "";
   if (bbb && bbb !== "none") {
     if ((bbb.includes("LBBB") && ["I","aVL","V5","V6","V1"].includes(leadName)) ||
         (bbb.includes("RBBB") && ["V1","V2","I","V5","V6"].includes(leadName))) {
-      return { color: "#1a5fa8", bg: "rgba(26,95,168,0.07)", label: bbb, severity: 2 };
+      return { type:"conduction", color:"rgba(26,95,168,0.35)", border:"#1a5fa8", label:"Conduction", confidence: 55 };
     }
   }
-  if (lf.includes("rbbb") || lf.includes("lbbb") || lf.includes("rsr") || lf.includes("wide qrs")) {
-    return { color: "#1a5fa8", bg: "rgba(26,95,168,0.07)", label: "Conduction", severity: 2 };
+  if (leadFinding.includes("rbbb") || leadFinding.includes("lbbb") || leadFinding.includes("wide qrs")) {
+    return { type:"conduction", color:"rgba(26,95,168,0.35)", border:"#1a5fa8", label:"Conduction", confidence: 50 };
   }
 
-  // Normal — green border
-  return { color: "#1a7a4a", bg: "rgba(26,122,74,0.04)", label: null, severity: 0 };
+  return { type:"normal", color:null, border:null, label:null, confidence: null };
 }
 
-// Renders a single lead strip onto a canvas
-function drawLeadStrip(canvas, signalData, opts = {}) {
-  if (!canvas) return;
+// Draws a blue heatmap confidence stripe overlay on a canvas
+function drawHeatmapOverlay(canvas, classification, confidence) {
+  if (!canvas || !classification.color) return;
   const ctx = canvas.getContext("2d");
   const W = canvas.width, H = canvas.height;
-  const { bgColor = "#fffdf8", waveColor = "#1a1a2e", highlightBg = null } = opts;
 
-  ctx.clearRect(0, 0, W, H);
+  // Vertical gradient band (like PMcardio blue columns)
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  const baseColor = classification.color;
+  grad.addColorStop(0, baseColor.replace(/[\d.]+\)$/, "0.1)"));
+  grad.addColorStop(0.3, baseColor);
+  grad.addColorStop(0.7, baseColor);
+  grad.addColorStop(1, baseColor.replace(/[\d.]+\)$/, "0.1)"));
 
-  // Background
-  ctx.fillStyle = highlightBg || bgColor;
+  ctx.fillStyle = grad;
   ctx.fillRect(0, 0, W, H);
 
-  // ECG paper grid
-  const MINOR = "rgba(192,57,43,0.08)";
-  const MAJOR = "rgba(192,57,43,0.18)";
-  ctx.lineWidth = 0.4;
-  ctx.strokeStyle = MINOR;
-  for (let x = 0; x < W; x += 8) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
-  for (let y = 0; y < H; y += 8) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
-  ctx.lineWidth = 0.7;
-  ctx.strokeStyle = MAJOR;
-  for (let x = 0; x < W; x += 40) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
-  for (let y = 0; y < H; y += 40) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
-
-  if (!signalData || signalData.length === 0) return;
-
-  // Baseline
-  ctx.strokeStyle = "rgba(192,57,43,0.15)";
-  ctx.lineWidth = 0.5;
-  ctx.setLineDash([3,3]);
-  ctx.beginPath(); ctx.moveTo(0, H/2); ctx.lineTo(W, H/2); ctx.stroke();
-  ctx.setLineDash([]);
-
-  // Draw waveform
-  ctx.strokeStyle = waveColor;
-  ctx.lineWidth = 1.4;
-  ctx.lineJoin = "round";
-  ctx.lineCap = "round";
-  ctx.shadowColor = waveColor;
-  ctx.shadowBlur = 1;
-  ctx.beginPath();
-  const mid = H / 2, amp = H * 0.38;
-  signalData.forEach((v, i) => {
-    const x = (i / signalData.length) * W;
-    const y = mid - v * amp;
-    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-  });
-  ctx.stroke();
-  ctx.shadowBlur = 0;
-}
-
-// Generates synthetic ECG waveform based on lead name and findings
-function generateLeadWaveform(leadName, classification, params = {}) {
-  const { hr = 75, beats = 3 } = params;
-  const spb = Math.floor(500 * (60 / hr));
-  const pts = [];
-  const isSTE = classification.severity >= 3 && classification.label !== "Ischaemia";
-  const isSTD = classification.label === "Ischaemia";
-  const isBBB = classification.label && classification.label.includes("BB");
-
-  // Lead-specific morphology adjustments
-  const leadConfig = {
-    "I":   { rAmp: 0.7,  pDir: 1,   tDir: 1,   qAmp: 0.05 },
-    "II":  { rAmp: 1.0,  pDir: 1,   tDir: 1,   qAmp: 0.05 },
-    "III": { rAmp: 0.5,  pDir: 0.5, tDir: 0.7, qAmp: 0.08 },
-    "aVR": { rAmp: -0.8, pDir: -1,  tDir: -1,  qAmp: 0    },
-    "aVL": { rAmp: 0.4,  pDir: 0.5, tDir: 0.6, qAmp: 0.05 },
-    "aVF": { rAmp: 0.8,  pDir: 1,   tDir: 1,   qAmp: 0.08 },
-    "V1":  { rAmp: 0.2,  pDir: 0.5, tDir: -0.5,qAmp: 0    },
-    "V2":  { rAmp: 0.4,  pDir: 0.8, tDir: 0.3, qAmp: 0    },
-    "V3":  { rAmp: 0.7,  pDir: 1,   tDir: 0.8, qAmp: 0    },
-    "V4":  { rAmp: 1.1,  pDir: 1,   tDir: 1,   qAmp: 0    },
-    "V5":  { rAmp: 1.0,  pDir: 1,   tDir: 1,   qAmp: 0.05 },
-    "V6":  { rAmp: 0.85, pDir: 1,   tDir: 1,   qAmp: 0.08 },
-  };
-  const cfg = leadConfig[leadName] || { rAmp: 0.8, pDir: 1, tDir: 1, qAmp: 0.05 };
-
-  for (let beat = 0; beat < beats; beat++) {
-    for (let i = 0; i < spb; i++) {
-      const ph = i / spb;
-      let y = 0;
-
-      // P wave
-      if (ph > 0.06 && ph < 0.14)
-        y = 0.12 * cfg.pDir * Math.sin(Math.PI * (ph - 0.06) / 0.08);
-
-      // QRS
-      if (!isBBB) {
-        if (ph > 0.22 && ph < 0.245) y = -0.07 * Math.abs(cfg.rAmp) * Math.sin(Math.PI * (ph - 0.22) / 0.025);
-        else if (ph > 0.245 && ph < 0.275) y = 1.05 * cfg.rAmp * Math.sin(Math.PI * (ph - 0.245) / 0.03);
-        else if (ph > 0.275 && ph < 0.305) y = -0.15 * Math.abs(cfg.rAmp) * Math.sin(Math.PI * (ph - 0.275) / 0.03);
-      } else {
-        // LBBB-like broad complex
-        if (ph > 0.22 && ph < 0.42) {
-          const t = (ph - 0.22) / 0.20;
-          y = t < 0.45 ? -0.2 * cfg.rAmp * Math.sin(Math.PI * t / 0.45)
-                       : 0.95 * cfg.rAmp * Math.sin(Math.PI * (t - 0.45) / 0.55);
-        }
-      }
-
-      // ST segment with elevation/depression
-      if (ph > 0.31 && ph < 0.42) {
-        if (isSTE) y = 0.25 * Math.abs(cfg.rAmp) * Math.sign(cfg.rAmp); // ST elevation
-        else if (isSTD) y = -0.15 * Math.abs(cfg.rAmp); // ST depression
-        else y = 0;
-      }
-
-      // T wave
-      if (ph > 0.38 && ph < 0.60) {
-        const tAmp = isSTE ? 0.45 : isSTD ? 0.1 : 0.3;
-        y += tAmp * cfg.tDir * Math.sin(Math.PI * (ph - 0.38) / 0.22);
-      }
-
-      pts.push(y + 0.01 * (Math.random() - 0.5));
-    }
+  // Confidence label at top
+  if (classification.confidence !== null) {
+    ctx.fillStyle = classification.border;
+    ctx.font = "bold 9px 'DM Mono', monospace";
+    ctx.textAlign = "right";
+    ctx.fillText(`${classification.confidence}%`, W - 6, 13);
+    ctx.textAlign = "left";
   }
-  return pts;
 }
 
-// ─── Reconstructed ECG Canvas Component ───────────────────────
-function ReconstructedECG({ digitized, analysis, onCapture }) {
-  const canvasRefs = React.useRef({});
-  const rhythmRef = React.useRef(null);
-  const containerRef = React.useRef(null);
-  const [rendered, setRendered] = React.useState(false);
+// ─── Lead Strip with Heatmap ────────────────────────────────────
+function LeadStrip({ leadName, imgSrc, x, y, w, h, classification, totalImgWidth, totalImgHeight, imgOffsetX = 0, imgOffsetY = 0 }) {
+  const canvasRef = React.useRef(null);
 
-  const LEADS_LAYOUT = [
+  React.useEffect(() => {
+    const cv = canvasRef.current;
+    if (!cv || !imgSrc) return;
+    const ctx = cv.getContext("2d");
+    cv.width = w * 2; cv.height = h * 2; // retina
+    ctx.scale(2, 2);
+
+    const img = new window.Image();
+    img.onload = () => {
+      // Draw the portion of the real ECG image for this lead
+      ctx.drawImage(img, x, y, w, h, 0, 0, w, h);
+      // Apply heatmap overlay on top
+      if (classification.color) {
+        drawHeatmapOverlay({ getContext: () => ctx, width: w * 2, height: h * 2 }, classification, classification.confidence);
+      }
+    };
+    img.src = imgSrc;
+  }, [imgSrc, x, y, w, h, classification]);
+
+  return (
+    <canvas ref={canvasRef}
+      style={{ width: w, height: h, display: "block" }}
+    />
+  );
+}
+
+// ─── Full 12-Lead Heatmap Reconstruction ───────────────────────
+function HeatmapECG({ imgSrc, digitized, analysis }) {
+  const containerRef = React.useRef(null);
+  const overlayRef = React.useRef(null);
+  const [imgDims, setImgDims] = React.useState(null);
+  const [showOverlay, setShowOverlay] = React.useState(true);
+
+  const ALL_LEADS = ["I","II","III","aVR","aVL","aVF","V1","V2","V3","V4","V5","V6"];
+  const LAYOUT = [
     ["I","aVR","V1","V4"],
     ["II","aVL","V2","V5"],
     ["III","aVF","V3","V6"],
   ];
-  const ALL_LEADS = LEADS_LAYOUT.flat();
-  const hr = digitized?.heart_rate_bpm || 75;
-  const params = { hr, beats: 3 };
 
-  // Classify all leads
   const classifications = {};
-  ALL_LEADS.forEach(lead => {
-    classifications[lead] = classifyLead(lead, digitized, analysis);
-  });
+  ALL_LEADS.forEach(l => { classifications[l] = classifyLead(l, digitized, analysis); });
 
-  React.useEffect(() => {
-    ALL_LEADS.forEach(lead => {
-      const cv = canvasRefs.current[lead];
-      if (!cv) return;
-      const cls = classifications[lead];
-      const signal = generateLeadWaveform(lead, cls, params);
-      drawLeadStrip(cv, signal, {
-        waveColor: cls.severity >= 3 ? "#9b1c1c" : cls.severity >= 2 ? "#92400e" : cls.label === null ? "#1a1a2e" : "#1e3a5f",
-        highlightBg: cls.bg,
-      });
-    });
-
-    // Rhythm strip — Lead II full width
-    const rhythmCv = rhythmRef.current;
-    if (rhythmCv) {
-      const cls = classifications["II"];
-      const signal = generateLeadWaveform("II", cls, { hr, beats: 6 });
-      drawLeadStrip(rhythmCv, signal, {
-        waveColor: cls.severity >= 3 ? "#9b1c1c" : "#1a1a2e",
-        highlightBg: cls.bg,
-      });
-    }
-    setRendered(true);
-  }, [digitized, analysis]);
-
-  // Capture canvas as image for PDF
-  const captureECG = () => {
-    if (!containerRef.current) return null;
-    // Collect all canvases and stitch into one image
-    const allCanvases = containerRef.current.querySelectorAll("canvas");
-    if (allCanvases.length === 0) return null;
-    const totalH = Array.from(allCanvases).reduce((sum, cv) => {
-      const rect = cv.getBoundingClientRect();
-      return Math.max(sum, cv.offsetTop + cv.height);
-    }, 0);
-    return containerRef.current;
-  };
-
-  const stemiLeads = ALL_LEADS.filter(l => classifications[l].severity >= 3);
-  const ischaemiaLeads = ALL_LEADS.filter(l => classifications[l].severity === 2 && !classifications[l].label?.includes("BB"));
-  const conductionLeads = ALL_LEADS.filter(l => classifications[l].label?.includes("BB") || classifications[l].label?.includes("Conduction"));
-  const normalLeads = ALL_LEADS.filter(l => classifications[l].severity === 0);
+  const stemiLeads = ALL_LEADS.filter(l => classifications[l].type === "stemi" || classifications[l].type === "stemi_equiv");
+  const ischaemiaLeads = ALL_LEADS.filter(l => classifications[l].type === "ischaemia");
+  const conductionLeads = ALL_LEADS.filter(l => classifications[l].type === "conduction");
+  const normalLeads = ALL_LEADS.filter(l => classifications[l].type === "normal");
 
   return (
     <div ref={containerRef}>
-      {/* Legend */}
-      <div style={{display:"flex",gap:12,marginBottom:10,flexWrap:"wrap",alignItems:"center"}}>
-        <div style={{fontSize:10,fontFamily:"'DM Mono',monospace",color:"#7a95a8",textTransform:"uppercase",letterSpacing:"0.08em"}}>Overlay Key:</div>
-        {[
-          {color:"#c0392b",bg:"rgba(192,57,43,0.1)",label:`STEMI / Equivalent (${stemiLeads.join(", ")||"none"})`},
-          {color:"#d4820a",bg:"rgba(212,130,10,0.1)",label:`Ischaemia (${ischaemiaLeads.join(", ")||"none"})`},
-          {color:"#1a5fa8",bg:"rgba(26,95,168,0.1)",label:`Conduction (${conductionLeads.join(", ")||"none"})`},
-          {color:"#1a7a4a",bg:"rgba(26,122,74,0.06)",label:`Normal (${normalLeads.length} leads)`},
-        ].map(({color,bg,label}) => (
-          <div key={label} style={{display:"flex",alignItems:"center",gap:5,fontSize:11}}>
-            <div style={{width:12,height:12,borderRadius:2,background:bg,border:`1.5px solid ${color}`}}/>
-            <span style={{color:"#4a6277"}}>{label}</span>
-          </div>
-        ))}
-      </div>
-
-      {/* 12-lead grid */}
-      <div style={{border:"1px solid rgba(192,57,43,0.2)",borderRadius:8,overflow:"hidden",background:"#fffdf8"}}>
-        {LEADS_LAYOUT.map((row, ri) => (
-          <div key={ri} style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:1,background:"rgba(192,57,43,0.1)"}}>
-            {row.map(lead => {
-              const cls = classifications[lead];
-              return (
-                <div key={lead} style={{position:"relative",background:cls.bg||"#fffdf8"}}>
-                  {/* Lead label */}
-                  <div style={{
-                    position:"absolute",top:4,left:6,zIndex:2,
-                    fontFamily:"'DM Mono',monospace",fontSize:9,
-                    fontWeight:700,color:cls.color,
-                    textTransform:"uppercase",letterSpacing:"0.06em",
-                    background:"rgba(255,253,248,0.85)",padding:"1px 4px",borderRadius:2
-                  }}>{lead}</div>
-                  {/* Severity badge */}
-                  {cls.label && (
-                    <div style={{
-                      position:"absolute",top:4,right:4,zIndex:2,
-                      fontFamily:"'DM Mono',monospace",fontSize:8,
-                      background:cls.color,color:"#fff",
-                      padding:"1px 5px",borderRadius:2,letterSpacing:"0.04em"
-                    }}>{cls.label}</div>
-                  )}
-                  {/* Border highlight */}
-                  <div style={{
-                    position:"absolute",inset:0,
-                    border:`2px solid ${cls.severity > 0 ? cls.color : "transparent"}`,
-                    opacity: cls.severity > 0 ? 0.5 : 0,
-                    pointerEvents:"none",zIndex:1
-                  }}/>
-                  <canvas
-                    ref={el => canvasRefs.current[lead] = el}
-                    width={900} height={80}
-                    style={{width:"100%",height:80,display:"block"}}
-                  />
-                </div>
-              );
-            })}
-          </div>
-        ))}
-
-        {/* Rhythm strip */}
-        <div style={{position:"relative",background:classifications["II"].bg||"#fffdf8",borderTop:"1px solid rgba(192,57,43,0.1)"}}>
-          <div style={{
-            position:"absolute",top:4,left:6,zIndex:2,
-            fontFamily:"'DM Mono',monospace",fontSize:9,fontWeight:700,
-            color:classifications["II"].color,
-            background:"rgba(255,253,248,0.85)",padding:"1px 4px",borderRadius:2
-          }}>Lead II — Rhythm Strip</div>
-          <canvas ref={rhythmRef} width={900} height={64}
-            style={{width:"100%",height:64,display:"block"}}/>
+      {/* Controls */}
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+        <div style={{display:"flex",gap:10,flexWrap:"wrap",alignItems:"center"}}>
+          <div style={{fontSize:10,fontFamily:"'DM Mono',monospace",color:"#7a95a8",textTransform:"uppercase",letterSpacing:"0.08em"}}>AI Confidence Overlay:</div>
+          {[
+            {color:"#c0392b",bg:"rgba(192,57,43,0.5)",label:`STEMI / Equiv — ${stemiLeads.join(", ")||"none"}`},
+            {color:"#d4820a",bg:"rgba(212,130,10,0.45)",label:`Ischaemia — ${ischaemiaLeads.join(", ")||"none"}`},
+            {color:"#1a5fa8",bg:"rgba(26,95,168,0.35)",label:`Conduction — ${conductionLeads.join(", ")||"none"}`},
+            {color:"#1a7a4a",bg:"transparent",label:`Normal — ${normalLeads.length} leads`},
+          ].filter(x => x.label.split("—")[1].trim() !== "none" || x.color === "#1a7a4a").map(({color,bg,label}) => (
+            <div key={label} style={{display:"flex",alignItems:"center",gap:5,fontSize:11}}>
+              <div style={{width:12,height:12,borderRadius:2,background:bg,border:`1.5px solid ${color}`}}/>
+              <span style={{color:"#4a6277"}}>{label}</span>
+            </div>
+          ))}
         </div>
+        <label style={{display:"flex",alignItems:"center",gap:6,fontSize:12,color:"#4a6277",cursor:"pointer"}}>
+          <input type="checkbox" checked={showOverlay} onChange={e=>setShowOverlay(e.target.checked)} style={{cursor:"pointer"}}/>
+          Show overlay
+        </label>
       </div>
 
-      {/* ECG metadata footer */}
+      {/* ECG with overlay */}
+      <div ref={overlayRef} style={{position:"relative",border:"1px solid rgba(192,57,43,0.2)",borderRadius:8,overflow:"hidden",background:"#fffdf8"}}>
+        {/* Real ECG image as base */}
+        <img
+          src={imgSrc}
+          alt="ECG"
+          style={{width:"100%",display:"block",borderRadius:7}}
+          onLoad={e => setImgDims({w: e.target.naturalWidth, h: e.target.naturalHeight, dw: e.target.offsetWidth, dh: e.target.offsetHeight})}
+        />
+
+        {/* Heatmap overlays — positioned on top of the image */}
+        {showOverlay && imgDims && (() => {
+          // Standard 12-lead layout: 4 columns × 3 rows
+          // Each column = 25% width, each row ≈ 28% height (rhythm strip takes ~16% at bottom)
+          const cols = 4, rows = 3;
+          const colW = imgDims.dw / cols;
+          const rowH = imgDims.dh * 0.84 / rows;
+          const rhythmH = imgDims.dh * 0.16;
+
+          return ALL_LEADS.map((lead, idx) => {
+            const cls = classifications[lead];
+            if (!cls.color) return null;
+            const col = LAYOUT.flat().indexOf(lead) % cols;
+            const row = Math.floor(LAYOUT.flat().indexOf(lead) / cols);
+
+            return (
+              <div key={lead} style={{
+                position:"absolute",
+                left: col * colW,
+                top: row * rowH,
+                width: colW,
+                height: rowH,
+                background: cls.color,
+                pointerEvents:"none",
+                display:"flex",
+                flexDirection:"column",
+                justifyContent:"space-between",
+                padding:"6px 8px",
+              }}>
+                {/* Confidence badge */}
+                {cls.confidence && (
+                  <div style={{
+                    alignSelf:"flex-end",
+                    background:cls.border,
+                    color:"#fff",
+                    fontSize:9,
+                    fontFamily:"'DM Mono',monospace",
+                    padding:"1px 5px",
+                    borderRadius:3,
+                    fontWeight:600,
+                  }}>{cls.confidence}% conf.</div>
+                )}
+                {/* Finding label */}
+                <div style={{
+                  alignSelf:"flex-start",
+                  background:cls.border,
+                  color:"#fff",
+                  fontSize:9,
+                  fontFamily:"'DM Mono',monospace",
+                  padding:"1px 5px",
+                  borderRadius:3,
+                  fontWeight:600,
+                  marginTop:"auto",
+                }}>{cls.label}</div>
+              </div>
+            );
+          });
+        })()}
+
+        {/* Rhythm strip overlay if II is abnormal */}
+        {showOverlay && imgDims && classifications["II"].color && (
+          <div style={{
+            position:"absolute",
+            left:0, bottom:0,
+            width:"100%",
+            height: imgDims.dh * 0.16,
+            background: classifications["II"].color,
+            pointerEvents:"none",
+            display:"flex",alignItems:"center",padding:"0 10px",
+          }}>
+            <span style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:"#fff",fontWeight:600,background:classifications["II"].border,padding:"2px 6px",borderRadius:3}}>
+              Rhythm Strip — {classifications["II"].label}
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Footer */}
       <div style={{display:"flex",justifyContent:"space-between",marginTop:6,fontSize:10,fontFamily:"'DM Mono',monospace",color:"#7a95a8"}}>
         <span>Speed: {digitized?.paper_speed||"25mm/s"} · Gain: {digitized?.calibration||"10mm/mV"} · Leads: {digitized?.leads_visible?.length||12}</span>
-        <span>Visualization by CardioLens · {new Date().toLocaleDateString("en-GB")}</span>
+        <span>AI Analysis by CardioLens · {new Date().toLocaleDateString("en-GB")}</span>
+      </div>
+    </div>
+  );
+}
+
+// ─── Clinical Report Renderer ──────────────────────────────────
+// Renders structured findings as readable clinical text, NOT raw JSON
+function ClinicalReport({ findings, imageQuality }) {
+  if (!findings) return null;
+  const f = findings;
+  const isCrit = f.critical_alert && f.critical_alert !== "null" && f.critical_alert !== "none" && f.critical_alert !== null;
+  const conf = typeof f.confidence === "object" ? f.confidence?.overall : f.confidence;
+
+  const getStr = (v) => {
+    if (!v || v === "null" || v === "none" || v === "None" || v === null) return null;
+    if (typeof v === "boolean") return v ? "Yes" : null;
+    if (Array.isArray(v)) {
+      const filtered = v.filter(x => x && x !== "null" && x !== "none");
+      return filtered.length ? filtered.join(", ") : null;
+    }
+    if (typeof v === "object") {
+      return Object.entries(v)
+        .filter(([,val]) => val !== null && val !== undefined && val !== "null" && val !== "none" && val !== false && val !== 0)
+        .map(([k,val]) => {
+          const label = k.replace(/_/g," ");
+          const value = typeof val === "object" ? getStr(val) : String(val);
+          return value ? `${label}: ${value}` : null;
+        })
+        .filter(Boolean)
+        .join(" · ");
+    }
+    return String(v);
+  };
+
+  const sections = [
+    { key:"step1_emergency", label:"Emergency Screen", style:"crit" },
+    { key:"rate", label:"Rate" },
+    { key:"rhythm", label:"Rhythm" },
+    { key:"p_waves", label:"P Waves" },
+    { key:"pr_interval", label:"PR Interval" },
+    { key:"qrs_complex", label:"QRS Complex" },
+    { key:"j_point", label:"J Point" },
+    { key:"st_segment", label:"ST Segment", style:"crit" },
+    { key:"t_waves", label:"T Waves", style:"warn" },
+    { key:"qt_interval", label:"QT / QTc" },
+    { key:"stemi_territory", label:"STEMI Territory", style:"crit" },
+    { key:"stemi_equivalents", label:"STEMI Equivalents", style:"crit" },
+    { key:"reciprocal_changes", label:"Reciprocal Changes", style:"warn" },
+    { key:"conduction", label:"Conduction", style:"warn" },
+    { key:"ectopy", label:"Ectopy", style:"warn" },
+    { key:"additional_findings", label:"Additional Findings" },
+    { key:"other_findings", label:"Other Findings" },
+  ];
+
+  const getSectionStyle = (key, val) => {
+    if (!val) return null;
+    const s = getStr(val);
+    if (!s) return null;
+    if (key === "stemi_territory" && val !== "None" && val !== "Unable to assess") return "rb rb-red";
+    if (key === "stemi_equivalents" && val !== "None") return "rb rb-red";
+    if (key === "step1_emergency" && !s.startsWith("CLEAR")) return "rb rb-red";
+    if (key === "step1_emergency") return "rb rb-green";
+    if (key === "st_segment") {
+      const elev = typeof val === "object" ? val?.elevation : "";
+      return elev && elev !== "none" ? "rb rb-red" : "rb";
+    }
+    if (key === "t_waves") {
+      const hp = typeof val === "object" ? val?.hyperacute_present : false;
+      return hp ? "rb rb-red" : "rb";
+    }
+    if (["reciprocal_changes","conduction","ectopy"].includes(key)) {
+      const hasAbnormality = s && s !== "None" && s !== "none" && s.toLowerCase() !== "normal";
+      return hasAbnormality ? "rb rb-amber" : "rb";
+    }
+    return "rb";
+  };
+
+  return (
+    <div>
+      {/* Primary interpretation box */}
+      {isCrit && (
+        <div className="alert-box alert-crit" style={{marginBottom:12}}>
+          <div className="alert-icon" style={{background:"#c0392b"}}>!</div>
+          <div>
+            <div style={{fontWeight:600,fontSize:13,color:"#c0392b",marginBottom:3}}>Critical Finding</div>
+            <div style={{fontSize:12,color:"#7a1a1a",lineHeight:1.6}}>{f.critical_alert}</div>
+          </div>
+        </div>
+      )}
+
+      {f.interpretation && (
+        <div className="alert-box alert-ok" style={{marginBottom:14}}>
+          <div className="alert-icon" style={{background:"#1a7a4a"}}>✓</div>
+          <div>
+            <div style={{fontWeight:600,fontSize:13,color:"#1a7a4a",marginBottom:3}}>Primary Interpretation</div>
+            <div style={{fontSize:13,color:"#1a3c2a",lineHeight:1.6}}>{getStr(f.interpretation)}</div>
+          </div>
+        </div>
+      )}
+
+      {/* Structured findings */}
+      <div style={{maxHeight:480,overflowY:"auto",paddingRight:2}}>
+        {sections.map(({ key, label }) => {
+          const val = f[key];
+          const display = getStr(val);
+          if (!display || display === "null" || display === "none" || display === "None") return null;
+          const cls = getSectionStyle(key, val);
+          if (!cls) return null;
+          return (
+            <div key={key} className={cls} style={{marginBottom:6}}>
+              <div className="rlbl">{label}</div>
+              <div className="rtxt" style={{fontSize:12.5,lineHeight:1.65}}>{display}</div>
+            </div>
+          );
+        })}
+
+        {f.differentials?.length > 0 && (
+          <div className="rb rb-blue" style={{marginBottom:6}}>
+            <div className="rlbl">Differentials</div>
+            <div className="rtxt" style={{fontSize:12.5}}>{Array.isArray(f.differentials)?f.differentials.join(" · "):getStr(f.differentials)}</div>
+          </div>
+        )}
+        {f.management && (
+          <div className="rb rb-amber" style={{marginBottom:6}}>
+            <div className="rlbl">Management</div>
+            <div className="rtxt" style={{fontSize:12.5}}>{getStr(f.management)}</div>
+          </div>
+        )}
+        {f.findings_limited_by_quality?.length > 0 && (
+          <div className="rb" style={{marginBottom:6,opacity:0.65}}>
+            <div className="rlbl">Limited by Image Quality</div>
+            <div className="rtxt" style={{fontSize:11.5}}>{f.findings_limited_by_quality.join(" · ")}</div>
+          </div>
+        )}
+      </div>
+
+      <div style={{marginTop:10,display:"flex",gap:8,flexWrap:"wrap"}}>
+        <span className={`badge ${conf==="HIGH"?"bg":conf==="LOW"?"br":"ba"}`}>{conf} confidence</span>
+        <span className={`badge ${imageQuality==="GOOD"?"bg":imageQuality==="POOR"?"br":"ba"}`}>{imageQuality} image quality</span>
       </div>
     </div>
   );
@@ -1098,210 +1160,161 @@ function Digitizer() {
   const [analysis, setAnalysis] = React.useState(null);
   const [error, setError] = React.useState(null);
   const [activeTab, setActiveTab] = React.useState("original");
-  const reportRef = React.useRef(null);
+  const stepTimers = React.useRef([]);
 
   const handleFile = f => {
-    setImgFile(f); setDigitized(null); setAnalysis(null); setError(null); setStep(0); setActiveTab("original");
-    const r = new FileReader(); r.onload = e => setImgSrc(e.target.result); r.readAsDataURL(f);
+    setImgFile(f); setDigitized(null); setAnalysis(null);
+    setError(null); setStep(0); setActiveTab("original");
+    const r = new FileReader();
+    r.onload = e => setImgSrc(e.target.result);
+    r.readAsDataURL(f);
   };
 
   const digitize = async () => {
     if (!imgFile) return;
     setStep(1); setError(null); setDigitized(null); setAnalysis(null);
+    // Animate steps
+    stepTimers.current.forEach(clearTimeout);
+    stepTimers.current = [
+      setTimeout(() => setStep(2), 1800),
+      setTimeout(() => setStep(3), 4500),
+      setTimeout(() => setStep(4), 8000),
+    ];
     try {
       const form = new FormData();
       form.append("image", imgFile);
       form.append("run_analysis", "true");
-      // Step animation
-      setTimeout(() => setStep(2), 2000);
-      setTimeout(() => setStep(3), 5000);
-      setTimeout(() => setStep(4), 9000);
-      const res = await api("/digitize", {method:"POST", body:form});
+      const res = await api("/digitize", { method:"POST", body:form });
+      stepTimers.current.forEach(clearTimeout);
       setDigitized(res.digitized);
-      setAnalysis(res.analysis ? {ecg_findings: res.analysis} : null);
+      setAnalysis(res.analysis ? { ecg_findings: res.analysis } : null);
       setStep(5);
-      setActiveTab("reconstruction");
-    } catch(e) { setError(e.message); setStep(0); }
+      setActiveTab("heatmap");
+    } catch(e) {
+      stepTimers.current.forEach(clearTimeout);
+      setError(e.message); setStep(0);
+    }
   };
 
-  const printReport = () => {
-    if (!reportRef.current) return;
+  const exportPDF = () => {
+    if (!digitized && !analysis) return;
     const f = analysis?.ecg_findings || {};
     const conf = typeof f.confidence === "object" ? f.confidence?.overall : f.confidence || "—";
     const now = new Date().toLocaleString("en-GB",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"});
     const reportId = Math.random().toString(36).substring(2,10).toUpperCase();
     const isCrit = f.critical_alert && f.critical_alert !== "null" && f.critical_alert !== "none";
 
-    // Collect canvas images
-    const canvases = reportRef.current.querySelectorAll("canvas");
-    const canvasImages = Array.from(canvases).map(cv => cv.toDataURL("image/png"));
+    const getStr = (v) => {
+      if (!v || v === "null" || v === "none" || v === null) return "—";
+      if (Array.isArray(v)) return v.filter(x=>x&&x!=="null"&&x!=="none").join(", ") || "—";
+      if (typeof v === "object") return Object.entries(v).filter(([,val])=>val&&val!=="null"&&val!=="none"&&val!==false&&val!==null&&val!==0).map(([k,val])=>`${k.replace(/_/g," ")}: ${typeof val==="object"?JSON.stringify(val):val}`).join(" · ") || "—";
+      return String(v);
+    };
+
+    const findings = [
+      ["Emergency Screen", f.step1_emergency],
+      ["Rate", f.rate], ["Rhythm", f.rhythm],
+      ["P Waves", f.p_waves], ["PR Interval", f.pr_interval],
+      ["QRS Complex", f.qrs_complex], ["J Point", f.j_point],
+      ["ST Segment", f.st_segment], ["T Waves", f.t_waves],
+      ["QT / QTc", f.qt_interval], ["STEMI Territory", f.stemi_territory],
+      ["STEMI Equivalents", f.stemi_equivalents],
+      ["Reciprocal Changes", f.reciprocal_changes],
+      ["Conduction", f.conduction], ["Ectopy", f.ectopy],
+      ["Additional Findings", f.additional_findings],
+    ].filter(([,v]) => v && getStr(v) !== "—");
 
     const w = window.open("","_blank");
     w.document.write(`<!DOCTYPE html>
-<html><head><title>CardioLens ECG Report ${reportId}</title>
+<html><head><title>CardioLens Digitizer Report ${reportId}<\/title>
 <style>
-  @page { size: A4 portrait; margin: 16mm 14mm; }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Helvetica Neue', Arial, sans-serif; color: #1a2b3c; font-size: 11px; background: #fff; }
-  .page { max-width: 180mm; margin: 0 auto; }
-
-  /* Header */
-  .report-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2.5px solid #0d1f35; padding-bottom: 10px; margin-bottom: 12px; }
-  .logo { font-size: 20px; font-weight: 700; color: #0d1f35; }
-  .logo-sub { font-size: 8px; color: #7a95a8; text-transform: uppercase; letter-spacing: 0.1em; margin-top: 2px; }
-  .disclaimer { font-size: 9px; color: #c0392b; font-weight: 600; margin-top: 5px; }
-  .report-id { text-align: right; }
-  .report-id .id-num { font-size: 16px; font-weight: 700; color: #0d1f35; font-family: monospace; }
-  .report-id .id-label { font-size: 8px; color: #7a95a8; text-transform: uppercase; letter-spacing: 0.08em; }
-
-  /* Critical alert */
-  .crit-banner { background: #fdecea; border: 2px solid #c0392b; border-radius: 6px; padding: 10px 14px; margin-bottom: 12px; display: flex; gap: 10px; align-items: flex-start; }
-  .crit-icon { width: 20px; height: 20px; background: #c0392b; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 11px; flex-shrink: 0; }
-  .crit-text { font-size: 11px; color: #7a1a1a; line-height: 1.5; }
-  .crit-title { font-weight: 700; color: #c0392b; margin-bottom: 3px; }
-
-  /* Patient row */
-  .patient-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 12px; }
-  .patient-cell { background: #f7f9fc; border-radius: 5px; padding: 6px 8px; }
-  .cell-label { font-size: 8px; color: #7a95a8; text-transform: uppercase; letter-spacing: 0.08em; font-family: monospace; }
-  .cell-value { font-size: 12px; font-weight: 600; color: #0d1f35; margin-top: 2px; }
-
-  /* Measurements */
-  .section-title { font-family: monospace; font-size: 8px; text-transform: uppercase; letter-spacing: 0.1em; color: #0d1f35; border-bottom: 1px solid #dde5ef; padding-bottom: 3px; margin: 10px 0 7px; }
-  .meas-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 10px; }
-  .meas-cell { background: #f7f9fc; border-radius: 5px; padding: 6px 8px; }
-  .meas-val { font-size: 15px; font-weight: 600; color: #0d1f35; font-family: monospace; line-height: 1.1; margin-top: 2px; }
-
-  /* ECG image */
-  .ecg-container { border: 1px solid rgba(192,57,43,0.2); border-radius: 6px; overflow: hidden; margin-bottom: 10px; background: #fffdf8; }
-  .ecg-original { width: 100%; max-height: 58mm; object-fit: contain; display: block; }
-
-  /* Findings */
-  .finding { padding: 5px 9px; margin-bottom: 4px; border-radius: 0 4px 4px 0; font-size: 10px; line-height: 1.6; }
-  .finding-normal { background: #f7f9fc; border-left: 3px solid #dde5ef; }
-  .finding-critical { background: #fef7f6; border-left: 3px solid #c0392b; }
-  .finding-warning { background: #fef9ec; border-left: 3px solid #d4820a; }
-  .finding-info { background: #eef3fb; border-left: 3px solid #0d1f35; }
-  .finding-label { font-family: monospace; font-size: 8px; text-transform: uppercase; letter-spacing: 0.08em; color: #7a95a8; margin-bottom: 2px; }
-
-  /* Two column layout */
-  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-
-  /* Overlay legend */
-  .legend { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
-  .legend-item { display: flex; align-items: center; gap: 4px; font-size: 9px; }
-  .legend-dot { width: 10px; height: 10px; border-radius: 2px; }
-
-  /* Footer */
-  .report-footer { margin-top: 14px; padding-top: 8px; border-top: 1px solid #dde5ef; display: flex; justify-content: space-between; font-size: 8px; color: #7a95a8; font-family: monospace; }
-  @media print { button { display: none !important; } body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
-</style>
-</head><body>
-<div class="page">
-
-  <!-- Header -->
-  <div class="report-header">
-    <div>
-      <div class="logo">🫀 CardioLens</div>
-      <div class="logo-sub">ECG Intelligence Platform</div>
-      <div class="disclaimer">⚠ For educational and research use only — not a substitute for clinical judgment</div>
-    </div>
-    <div class="report-id">
-      <div class="id-label">Report ID</div>
-      <div class="id-num">${reportId}</div>
-      <div style="font-size:9px;color:#7a95a8;margin-top:4px;font-family:monospace">${now}</div>
-    </div>
+@page{size:A4 portrait;margin:14mm 12mm}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Helvetica Neue',Arial,sans-serif;color:#1a2b3c;font-size:10.5px;background:#fff}
+.page{max-width:182mm;margin:0 auto}
+.hdr{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2.5px solid #0d1f35;padding-bottom:10px;margin-bottom:10px}
+.logo{font-size:19px;font-weight:700;color:#0d1f35}
+.logo-sub{font-size:7.5px;color:#7a95a8;text-transform:uppercase;letter-spacing:0.1em;margin-top:2px}
+.disclaimer{font-size:8.5px;color:#c0392b;font-weight:600;margin-top:4px}
+.rid{text-align:right}.rid-num{font-size:15px;font-weight:700;color:#0d1f35;font-family:monospace}
+.rid-label{font-size:7.5px;color:#7a95a8;text-transform:uppercase;letter-spacing:0.08em}
+.crit-banner{background:#fdecea;border:2px solid #c0392b;border-radius:6px;padding:8px 12px;margin-bottom:10px;display:flex;gap:8px}
+.crit-icon{width:18px;height:18px;background:#c0392b;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:10px;flex-shrink:0}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:10px}
+.cell{background:#f7f9fc;border-radius:4px;padding:5px 7px}
+.cell-label{font-size:7.5px;color:#7a95a8;text-transform:uppercase;letter-spacing:0.08em;font-family:monospace}
+.cell-val{font-size:11.5px;font-weight:600;color:#0d1f35;margin-top:1px}
+.st{font-family:monospace;font-size:7.5px;text-transform:uppercase;letter-spacing:0.1em;color:#0d1f35;border-bottom:1px solid #dde5ef;padding-bottom:3px;margin:8px 0 5px}
+.ecg-img{width:100%;max-height:55mm;object-fit:contain;border:1px solid rgba(192,57,43,0.2);border-radius:5px;display:block;margin-bottom:8px}
+.interp{background:#eef3fb;border-left:3px solid #0d1f35;padding:7px 10px;border-radius:0 4px 4px 0;font-size:11px;font-weight:600;margin-bottom:8px;line-height:1.5}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.finding{padding:4px 8px;margin-bottom:3px;border-radius:0 3px 3px 0;font-size:9.5px;line-height:1.55}
+.fn{background:#f7f9fc;border-left:2.5px solid #dde5ef}
+.fc{background:#fef7f6;border-left:2.5px solid #c0392b}
+.fw{background:#fef9ec;border-left:2.5px solid #d4820a}
+.fi{background:#eef3fb;border-left:2.5px solid #0d1f35}
+.fl{font-family:monospace;font-size:7.5px;text-transform:uppercase;letter-spacing:0.08em;color:#7a95a8;margin-bottom:1px}
+.meas-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:8px}
+.footer{margin-top:12px;padding-top:7px;border-top:1px solid #dde5ef;display:flex;justify-content:space-between;font-size:7.5px;color:#7a95a8;font-family:monospace}
+@media print{button{display:none!important}body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+<\/style><\/head><body><div class="page">
+<div class="hdr">
+  <div>
+    <div class="logo">🫀 CardioLens</div>
+    <div class="logo-sub">ECG Digitizer Report</div>
+    <div class="disclaimer">⚠ Educational &amp; Research Use Only — Not a substitute for clinical judgment</div>
   </div>
-
-  ${isCrit ? `
-  <div class="crit-banner">
-    <div class="crit-icon">!</div>
-    <div class="crit-text">
-      <div class="crit-title">CRITICAL FINDING — IMMEDIATE CLINICAL REVIEW REQUIRED</div>
-      ${f.critical_alert}
-    </div>
-  </div>` : ""}
-
-  <!-- Patient info -->
-  <div class="patient-grid">
-    <div class="patient-cell"><div class="cell-label">Analysis Type</div><div class="cell-value">ECG Digitizer</div></div>
-    <div class="patient-cell"><div class="cell-label">Confidence</div><div class="cell-value">${conf}</div></div>
-    <div class="patient-cell"><div class="cell-label">Image Quality</div><div class="cell-value">${digitized?.image_quality||"—"}</div></div>
-    <div class="patient-cell"><div class="cell-label">Date</div><div class="cell-value">${now.split(",")[0]}</div></div>
+  <div class="rid">
+    <div class="rid-label">Report ID</div>
+    <div class="rid-num">${reportId}</div>
+    <div style="font-size:8px;color:#7a95a8;margin-top:3px;font-family:monospace">${now}</div>
   </div>
-
-  <!-- Measurements -->
-  <div class="section-title">Digitized ECG Measurements</div>
-  <div class="meas-grid">
-    ${[
-      ["Heart Rate", digitized?.heart_rate_bpm ? `${digitized.heart_rate_bpm} bpm` : "—"],
-      ["RR Interval", digitized?.rr_interval_ms ? `${digitized.rr_interval_ms} ms` : "—"],
-      ["PR Interval", digitized?.pr_interval_ms ? `${digitized.pr_interval_ms} ms` : "—"],
-      ["QRS Duration", digitized?.qrs_duration_ms ? `${digitized.qrs_duration_ms} ms` : "—"],
-      ["QTc", digitized?.qtc_ms ? `${digitized.qtc_ms} ms` : "—"],
-      ["QRS Axis", digitized?.qrs_axis !== null && digitized?.qrs_axis !== undefined ? `${digitized.qrs_axis}°` : "—"],
-      ["Paper Speed", digitized?.paper_speed || "—"],
-      ["Calibration", digitized?.calibration || "—"],
-    ].map(([k,v]) => `<div class="meas-cell"><div class="cell-label">${k}</div><div class="meas-val">${v}</div></div>`).join("")}
-  </div>
-
-  <!-- Original ECG image -->
-  ${imgSrc ? `
-  <div class="section-title">Original ECG</div>
-  <div class="ecg-container">
-    <img src="${imgSrc}" class="ecg-original" alt="Original ECG"/>
-  </div>` : ""}
-
-  <!-- Interpretation -->
-  ${f.interpretation ? `
-  <div class="section-title">Primary Interpretation</div>
-  <div class="finding finding-info" style="font-weight:600;font-size:11px">${f.interpretation}</div>` : ""}
-
-  <!-- Two column: findings + lead findings -->
-  <div class="two-col">
-    <div>
-      <div class="section-title">Clinical Findings</div>
-      ${f.step1_emergency ? `<div class="finding ${f.step1_emergency.startsWith("CLEAR") ? "finding-normal" : "finding-critical"}"><div class="finding-label">Emergency Screen</div>${f.step1_emergency}</div>` : ""}
-      ${["rhythm","p_waves","pr_interval","qrs_complex","st_segment","t_waves","qt_interval","stemi_territory","stemi_equivalents","conduction","ectopy"].map(k => {
-        const v = f[k];
-        if (!v || v === "null" || v === "none") return "";
-        const display = typeof v === "object"
-          ? Object.entries(v).filter(([,val]) => val && val !== "null" && val !== "none" && val !== false && val !== null)
-              .map(([key,val]) => `${key.replace(/_/g," ")}: ${val}`).join(" | ")
-          : String(v);
-        if (!display || display === "null") return "";
-        const isCritK = k === "stemi_territory" && v !== "None" && v !== "Unable to assess";
-        const isWarnK = ["stemi_equivalents","conduction","ectopy"].includes(k) && display !== "None";
-        return `<div class="finding ${isCritK ? "finding-critical" : isWarnK ? "finding-warning" : "finding-normal"}">
-          <div class="finding-label">${k.replace(/_/g," ").toUpperCase()}</div>${display}</div>`;
-      }).join("")}
-    </div>
-    <div>
-      <div class="section-title">Lead-by-Lead Findings</div>
-      ${digitized?.lead_findings ? Object.entries(digitized.lead_findings).map(([lead, desc]) => `
-        <div class="finding finding-normal">
-          <div class="finding-label">${lead}</div>${desc}
-        </div>`).join("") : "<p style='color:#7a95a8;font-size:10px'>No per-lead data extracted</p>"}
-    </div>
-  </div>
-
-  <!-- Differentials + Management -->
-  ${f.differentials?.length ? `
-  <div class="section-title">Differential Diagnosis</div>
-  <div class="finding finding-warning">${Array.isArray(f.differentials) ? f.differentials.join(" · ") : f.differentials}</div>` : ""}
-
-  ${f.management ? `
-  <div class="section-title">Management Recommendations</div>
-  <div class="finding finding-normal">${f.management}</div>` : ""}
-
-  <!-- Footer -->
-  <div class="report-footer">
-    <span>CardioLens ECG Platform · Educational Use Only · Not for Clinical Decision Making</span>
-    <span>Report ${reportId} · Generated ${now}</span>
-  </div>
-
 </div>
-<script>setTimeout(() => window.print(), 800);<\/script>
+
+${isCrit ? `<div class="crit-banner"><div class="crit-icon">!</div><div><strong style="color:#c0392b">CRITICAL — IMMEDIATE REVIEW REQUIRED</strong><br/><span style="font-size:9.5px;color:#7a1a1a">${f.critical_alert}</span></div></div>` : ""}
+
+<div class="grid4">
+  <div class="cell"><div class="cell-label">Confidence</div><div class="cell-val">${conf}</div></div>
+  <div class="cell"><div class="cell-label">Image Quality</div><div class="cell-val">${digitized?.image_quality||"—"}</div></div>
+  <div class="cell"><div class="cell-label">Paper Speed</div><div class="cell-val">${digitized?.paper_speed||"—"}</div></div>
+  <div class="cell"><div class="cell-label">Calibration</div><div class="cell-val">${digitized?.calibration||"—"}</div></div>
+</div>
+
+${f.interpretation ? `<div class="st">Primary Interpretation</div><div class="interp">${getStr(f.interpretation)}</div>` : ""}
+
+${imgSrc ? `<div class="st">Original ECG</div><img src="${imgSrc}" class="ecg-img" alt="ECG"/>` : ""}
+
+<div class="st">ECG Measurements</div>
+<div class="meas-grid">
+  ${[["HR",digitized?.heart_rate_bpm?`${digitized.heart_rate_bpm} bpm`:"—"],["PR",digitized?.pr_interval_ms?`${digitized.pr_interval_ms} ms`:"—"],["QRS",digitized?.qrs_duration_ms?`${digitized.qrs_duration_ms} ms`:"—"],["QTc",digitized?.qtc_ms?`${digitized.qtc_ms} ms`:"—"],["RR",digitized?.rr_interval_ms?`${digitized.rr_interval_ms} ms`:"—"],["Axis",digitized?.qrs_axis!=null?`${digitized.qrs_axis}°`:"—"],["P Axis",digitized?.p_axis!=null?`${digitized.p_axis}°`:"—"],["T Axis",digitized?.t_axis!=null?`${digitized.t_axis}°`:"—"]].map(([k,v])=>`<div class="cell"><div class="cell-label">${k}</div><div class="cell-val">${v}</div></div>`).join("")}
+</div>
+
+<div class="two-col">
+  <div>
+    <div class="st">Clinical Findings</div>
+    ${findings.map(([label, val]) => {
+      const display = getStr(val);
+      const isCritSection = ["STEMI Territory","STEMI Equivalents","Emergency Screen"].includes(label) && display !== "—" && display !== "None" && !display.startsWith("CLEAR");
+      const isWarn = ["ST Segment","T Waves","Reciprocal Changes","Conduction","Ectopy"].includes(label) && display !== "—" && display !== "none";
+      const cls = isCritSection ? "fc" : isWarn ? "fw" : "fn";
+      return `<div class="finding ${cls}"><div class="fl">${label}</div>${display}</div>`;
+    }).join("")}
+  </div>
+  <div>
+    <div class="st">Lead-by-Lead Findings</div>
+    ${digitized?.lead_findings ? Object.entries(digitized.lead_findings).map(([lead,desc])=>`<div class="finding fn"><div class="fl">${lead}</div>${desc}</div>`).join("") : "<p style='color:#7a95a8;font-size:9px'>No per-lead data</p>"}
+  </div>
+</div>
+
+${f.differentials?.length ? `<div class="st">Differentials</div><div class="finding fw"><div class="fl">Differential Diagnosis</div>${Array.isArray(f.differentials)?f.differentials.join(" · "):getStr(f.differentials)}</div>` : ""}
+${f.management ? `<div class="st">Management</div><div class="finding fi"><div class="fl">Recommendations</div>${getStr(f.management)}</div>` : ""}
+
+<div class="footer">
+  <span>CardioLens ECG Platform · Educational Use Only · Not for Clinical Decision Making</span>
+  <span>Report ${reportId} · ${now}</span>
+</div>
+</div>
+<script>setTimeout(()=>window.print(),800);<\/script>
 </body></html>`);
     w.document.close();
   };
@@ -1312,12 +1325,10 @@ function Digitizer() {
     <div>
       {/* Step progress */}
       <div style={{display:"flex",alignItems:"flex-start",marginBottom:20}}>
-        {steps.map((s,i) => (
+        {steps.map((s,i)=>(
           <div key={s} style={{display:"flex",alignItems:"center",flex:i<steps.length-1?"1":"none"}}>
             <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:5}}>
-              <div className={`step-circle ${step>i?"step-done":step===i?"step-active":"step-pending"}`}>
-                {step>i?"✓":i+1}
-              </div>
+              <div className={`step-circle ${step>i?"step-done":step===i?"step-active":"step-pending"}`}>{step>i?"✓":i+1}</div>
               <div style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:step>=i?"#0d1f35":"#7a95a8",textTransform:"uppercase",letterSpacing:"0.06em",whiteSpace:"nowrap",textAlign:"center"}}>{s}</div>
             </div>
             {i<steps.length-1&&<div className={`step-line ${step>i?"step-done-line":""}`} style={{marginBottom:18}}/>}
@@ -1325,18 +1336,18 @@ function Digitizer() {
         ))}
       </div>
 
-      <div style={{display:"grid",gridTemplateColumns:"420px 1fr",gap:20,alignItems:"start"}}>
-        {/* Left — upload + controls */}
+      <div style={{display:"grid",gridTemplateColumns:"380px 1fr",gap:20,alignItems:"start"}}>
+        {/* LEFT */}
         <div>
           <div className="card">
             <div className="ch"><div className="ct">Upload Paper ECG</div><div className="cs">Photo or scan · any 12-lead layout</div></div>
             <div className="cb">
               <UploadZone imgSrc={imgSrc} onFile={handleFile}
-                onClear={()=>{setImgSrc(null);setImgFile(null);setStep(0);setDigitized(null);setAnalysis(null);}}
+                onClear={()=>{setImgSrc(null);setImgFile(null);setStep(0);setDigitized(null);setAnalysis(null);setActiveTab("original");}}
                 label="Upload paper ECG for digitization"/>
               {imgFile && step===0 && (
                 <button className="btn btn-n" style={{width:"100%",justifyContent:"center",marginTop:12}} onClick={digitize}>
-                  🔬 Digitize + Reconstruct + Analyse
+                  🔬 Digitize + Analyse ECG
                 </button>
               )}
               {step>0 && step<5 && (
@@ -1344,11 +1355,11 @@ function Digitizer() {
                   <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
                     <span className="spinner-dark"/>
                     <div style={{fontFamily:"'DM Mono',monospace",fontSize:11,color:"#0d1f35"}}>
-                      {["","Detecting paper grid…","Isolating leads…","Extracting waveform data…","Running AI analysis…"][step]}
+                      {["","Detecting paper grid and calibration…","Isolating 12 leads…","Extracting waveform measurements…","Running systematic AI analysis…"][step]}
                     </div>
                   </div>
                   <div style={{height:3,background:"#dde5ef",borderRadius:2}}>
-                    <div style={{height:"100%",width:`${(step/5)*100}%`,background:"#0d1f35",borderRadius:2,transition:"width 0.5s ease"}}/>
+                    <div style={{height:"100%",width:`${(step/5)*100}%`,background:"#0d1f35",borderRadius:2,transition:"width 0.8s ease"}}/>
                   </div>
                 </div>
               )}
@@ -1356,60 +1367,46 @@ function Digitizer() {
             </div>
           </div>
 
-          {/* Measurements card */}
+          {/* Measurements */}
           {digitized && (
             <div className="card fu">
-              <div className="ch"><div className="ct" style={{fontSize:14}}>Digitized Measurements</div></div>
+              <div className="ch"><div className="ct" style={{fontSize:14}}>Measurements</div><div className="cs">Extracted from original ECG</div></div>
               <div className="cb">
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
                   {[
-                    ["Heart Rate", digitized.heart_rate_bpm ? `${digitized.heart_rate_bpm} bpm` : "—"],
-                    ["RR Interval", digitized.rr_interval_ms ? `${digitized.rr_interval_ms} ms` : "—"],
-                    ["PR Interval", digitized.pr_interval_ms ? `${digitized.pr_interval_ms} ms` : "—"],
-                    ["QRS Duration", digitized.qrs_duration_ms ? `${digitized.qrs_duration_ms} ms` : "—"],
-                    ["QTc", digitized.qtc_ms ? `${digitized.qtc_ms} ms` : "—"],
-                    ["QRS Axis", digitized.qrs_axis !== null && digitized.qrs_axis !== undefined ? `${digitized.qrs_axis}°` : "—"],
-                    ["Paper Speed", digitized.paper_speed || "—"],
-                    ["Calibration", digitized.calibration || "—"],
-                  ].map(([k,v]) => (
-                    <div key={k} style={{background:"#f0f4f8",borderRadius:7,padding:"9px 11px"}}>
+                    ["Heart Rate", digitized.heart_rate_bpm?`${digitized.heart_rate_bpm} bpm`:"—"],
+                    ["RR Interval", digitized.rr_interval_ms?`${digitized.rr_interval_ms} ms`:"—"],
+                    ["PR Interval", digitized.pr_interval_ms?`${digitized.pr_interval_ms} ms`:"—"],
+                    ["QRS Duration", digitized.qrs_duration_ms?`${digitized.qrs_duration_ms} ms`:"—"],
+                    ["QTc", digitized.qtc_ms?`${digitized.qtc_ms} ms`:"—"],
+                    ["QRS Axis", digitized.qrs_axis!=null?`${digitized.qrs_axis}°`:"—"],
+                    ["Paper Speed", digitized.paper_speed||"—"],
+                    ["Calibration", digitized.calibration||"—"],
+                  ].map(([k,v])=>(
+                    <div key={k} style={{background:"#f0f4f8",borderRadius:7,padding:"8px 10px"}}>
                       <div style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:"#7a95a8",textTransform:"uppercase",letterSpacing:"0.06em"}}>{k}</div>
-                      <div style={{fontFamily:"'Fraunces',serif",fontSize:18,fontWeight:500,color:"#0d1f35",marginTop:2}}>{v}</div>
+                      <div style={{fontFamily:"'Fraunces',serif",fontSize:17,fontWeight:500,color:"#0d1f35",marginTop:2}}>{v}</div>
                     </div>
                   ))}
                 </div>
-                {/* Per-lead findings */}
-                {digitized.lead_findings && (
-                  <div>
-                    <div style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:"#7a95a8",textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:8}}>Lead-by-Lead</div>
-                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
-                      {Object.entries(digitized.lead_findings).map(([lead,desc]) => (
-                        <div key={lead} style={{background:"#f7f9fc",border:`1.5px solid ${classifyLead(lead,digitized,analysis).color}30`,borderRadius:5,padding:"6px 8px"}}>
-                          <div style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:classifyLead(lead,digitized,analysis).color,fontWeight:700,marginBottom:2}}>{lead}</div>
-                          <div style={{fontSize:11,color:"#4a6277",lineHeight:1.5}}>{desc}</div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
           )}
 
-          {/* Pipeline explanation */}
+          {/* Pipeline */}
           {!digitized && (
             <div className="card">
               <div className="ch"><div className="ct" style={{fontSize:14}}>Digitization Pipeline</div></div>
               <div className="cb">
                 {[
-                  {icon:"🔍",t:"Grid Detection",d:"Detects ECG paper grid to calibrate 25mm/s and 10mm/mV scale"},
-                  {icon:"✂️",t:"Lead Isolation",d:"Segments 4×3 layout into individual lead regions"},
-                  {icon:"〰️",t:"Waveform Extraction",d:"Claude Vision extracts per-lead measurements and morphology"},
-                  {icon:"🎨",t:"ECG Reconstruction",d:"Renders clean annotated 12-lead with colour-coded highlights"},
-                  {icon:"🤖",t:"AI Classification",d:"Full systematic clinical interpretation using 8-phase protocol"},
-                ].map(({icon,t,d}) => (
-                  <div key={t} style={{display:"flex",gap:10,padding:"8px 0",borderBottom:"1px solid #f0f4f8"}}>
-                    <span style={{fontSize:18,flexShrink:0}}>{icon}</span>
+                  {icon:"🔍",t:"Grid Detection",d:"Calibrates 25mm/s and 10mm/mV scale from paper grid"},
+                  {icon:"✂️",t:"Lead Isolation",d:"Segments standard 4×3 layout into 12 lead regions"},
+                  {icon:"〰️",t:"Measurement Extraction",d:"Per-lead interval and morphology measurements"},
+                  {icon:"🎨",t:"AI Confidence Overlay",d:"Heatmap showing AI certainty per lead — like PMcardio"},
+                  {icon:"🤖",t:"8-Phase Clinical Analysis",d:"Full systematic interpretation using clinical decision tree"},
+                ].map(({icon,t,d})=>(
+                  <div key={t} style={{display:"flex",gap:10,padding:"7px 0",borderBottom:"1px solid #f0f4f8"}}>
+                    <span style={{fontSize:16,flexShrink:0}}>{icon}</span>
                     <div><div style={{fontWeight:500,fontSize:13}}>{t}</div><div style={{fontSize:11,color:"#7a95a8",marginTop:1}}>{d}</div></div>
                   </div>
                 ))}
@@ -1418,70 +1415,68 @@ function Digitizer() {
           )}
         </div>
 
-        {/* Right — ECG reconstruction + analysis */}
+        {/* RIGHT */}
         <div>
-          {step === 5 && digitized && (
+          {step===5 && (digitized||analysis) ? (
             <div className="fu">
-              {/* Tab bar */}
+              {/* Tabs + export button */}
               <div className="tab-bar">
-                {[["original","Original Photo"],["reconstruction","12-Lead Reconstruction"],["analysis","Clinical Report"]].map(([id,lbl]) => (
+                {[["original","Original"],["heatmap","AI Heatmap"],["analysis","Clinical Report"]].map(([id,lbl])=>(
                   <div key={id} className={`tab ${activeTab===id?"active":""}`} onClick={()=>setActiveTab(id)}>{lbl}</div>
                 ))}
-                <button className="btn btn-g btn-sm" style={{marginLeft:"auto",alignSelf:"center"}} onClick={printReport}>
-                  📄 Export A4 PDF Report
+                <button className="btn btn-g btn-sm" style={{marginLeft:"auto",alignSelf:"center"}} onClick={exportPDF}>
+                  📄 Export A4 PDF
                 </button>
               </div>
 
-              {activeTab === "original" && imgSrc && (
+              {activeTab==="original" && imgSrc && (
                 <div className="card">
                   <div className="cb">
                     <img src={imgSrc} alt="Original ECG" style={{width:"100%",borderRadius:7,border:"1px solid #dde5ef"}}/>
-                    <div style={{fontSize:10,fontFamily:"'DM Mono',monospace",color:"#7a95a8",marginTop:8,textAlign:"center"}}>Original uploaded ECG image</div>
+                    <div style={{fontSize:10,fontFamily:"'DM Mono',monospace",color:"#7a95a8",marginTop:8,textAlign:"center"}}>Original uploaded ECG · unmodified</div>
                   </div>
                 </div>
               )}
 
-              {activeTab === "reconstruction" && (
-                <div className="card" ref={reportRef}>
+              {activeTab==="heatmap" && imgSrc && (
+                <div className="card">
                   <div className="ch">
-                    <div className="ct">Digital Reconstruction</div>
-                    <div className="cs">Clean 12-lead ECG with colour-coded abnormality overlays</div>
+                    <div className="ct">AI Confidence Heatmap</div>
+                    <div className="cs">Abnormality overlays on original ECG · toggle to compare</div>
                   </div>
                   <div className="cb">
-                    <ReconstructedECG digitized={digitized} analysis={analysis}/>
+                    <HeatmapECG imgSrc={imgSrc} digitized={digitized} analysis={analysis}/>
                   </div>
                 </div>
               )}
 
-              {activeTab === "analysis" && analysis && (
+              {activeTab==="analysis" && (
                 <div className="card">
                   <div className="ch">
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                       <div><div className="ct">Clinical Interpretation</div><div className="cs">8-phase systematic analysis</div></div>
-                      <span className={`badge ${analysis.ecg_findings?.image_quality==="GOOD"?"bg":analysis.ecg_findings?.image_quality==="POOR"?"br":"ba"}`}>
-                        {analysis.ecg_findings?.image_quality} quality
-                      </span>
+                      {analysis?.ecg_findings && (
+                        <span className={`badge ${analysis.ecg_findings.image_quality==="GOOD"?"bg":analysis.ecg_findings.image_quality==="POOR"?"br":"ba"}`}>
+                          {analysis.ecg_findings.image_quality} quality
+                        </span>
+                      )}
                     </div>
                   </div>
                   <div className="cb">
-                    <FindingsPanel findings={analysis.ecg_findings} confidence={analysis.ecg_findings?.confidence} imageQuality={analysis.ecg_findings?.image_quality}/>
+                    <ClinicalReport findings={analysis?.ecg_findings} imageQuality={analysis?.ecg_findings?.image_quality}/>
                   </div>
                 </div>
               )}
             </div>
-          )}
-
-          {step === 0 && !digitized && (
+          ) : step===0 && (
             <div className="card" style={{textAlign:"center",padding:"60px 20px"}}>
               <div style={{fontSize:36,marginBottom:14}}>📡</div>
-              <div style={{fontFamily:"'Fraunces',serif",fontSize:19,fontWeight:500,marginBottom:8}}>ECG Digitizer</div>
+              <div style={{fontFamily:"'Fraunces',serif",fontSize:18,fontWeight:500,marginBottom:8}}>ECG Digitizer</div>
               <div style={{fontSize:13,color:"#7a95a8",lineHeight:1.8}}>
-                Upload a paper ECG photo.<br/>
-                The system will extract measurements,<br/>
-                reconstruct a clean 12-lead with<br/>
-                <strong style={{color:"#0d1f35"}}>colour-coded abnormality overlays</strong>,<br/>
-                and generate a full clinical report<br/>
-                exportable as an <strong style={{color:"#0d1f35"}}>A4 PDF</strong>.
+                Upload a paper ECG photo to get:<br/>
+                <strong style={{color:"#0d1f35"}}>AI confidence heatmap</strong> on the original image<br/>
+                <strong style={{color:"#0d1f35"}}>Structured clinical report</strong> with all findings<br/>
+                <strong style={{color:"#0d1f35"}}>A4 PDF export</strong> ready to print or share
               </div>
             </div>
           )}
@@ -1490,6 +1485,7 @@ function Digitizer() {
     </div>
   );
 }
+
 
 
 // ─── TRAINING DASHBOARD ────────────────────────────────────────
@@ -1621,7 +1617,7 @@ function PDFExport({ data, onBack }) {
     .crit{background:#fdecea;border:2px solid #c0392b;border-radius:8px;padding:12px;margin-bottom:16px}
     img{max-width:100%;max-height:200px;object-fit:contain;border:1px solid #dde5ef;border-radius:6px;margin-bottom:10px}
     .footer{margin-top:20px;padding-top:10px;border-top:1px solid #dde5ef;display:flex;justify-content:space-between;font-family:monospace;font-size:9px;color:#7a95a8}
-    @media print{button{display:none}}</style></head><body>
+    @media print{button{display:none}}<\/style></head><body>
     <div class="hdr"><div><strong style="font-size:20px;color:#0d1f35">🫀 CardioLens</strong><br>
     <span style="font-family:monospace;font-size:9px;color:#7a95a8">ECG Intelligence Platform · Educational Use Only</span><br>
     <span style="color:#c0392b;font-size:11px;font-weight:600">⚠ Not a substitute for clinical judgment</span></div>
