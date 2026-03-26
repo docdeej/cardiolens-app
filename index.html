@@ -310,6 +310,10 @@ function Analyzer({ onExport }) {
   const [verifyMode, setVerifyMode] = React.useState(false);
   const [correctDx, setCorrectDx] = React.useState("");
   const [category, setCategory] = React.useState("Rhythm disorders");
+  const [challengeMode, setChallengeMode] = React.useState(false);
+  const [challengeDx, setChallengeDx] = React.useState("");
+  const [challengeLoading, setChallengeLoading] = React.useState(false);
+  const [challengeResult, setChallengeResult] = React.useState(null);
   const setI = (k,v) => setInfo(p=>({...p,[k]:v}));
 
   const handleFile = f => {
@@ -331,6 +335,25 @@ function Analyzer({ onExport }) {
       setReport(result);
     } catch(e) { setError(e.message); }
     setLoading(false);
+  };
+
+  const runChallenge = async () => {
+    if (!imgFile || !challengeDx) return;
+    setChallengeLoading(true);
+    try {
+      const form = new FormData();
+      form.append("image", imgFile);
+      form.append("original_interpretation", report?.ecg_findings?.interpretation || "Unknown");
+      form.append("challenged_diagnosis", challengeDx);
+      if (info.age) form.append("age", info.age);
+      if (info.sex) form.append("sex", info.sex);
+      if (info.complaint) form.append("complaint", info.complaint);
+      if (info.context) form.append("context", info.context);
+      const result = await api("/analyze/challenge", {method:"POST", body:form});
+      setChallengeResult(result);
+      setChallengeMode(false);
+    } catch(e) { setError(e.message); }
+    setChallengeLoading(false);
   };
 
   const saveToLibrary = async () => {
@@ -418,6 +441,51 @@ function Analyzer({ onExport }) {
                 </div>
               )}
               {saved && <div style={{marginTop:10,padding:"8px 12px",background:"#eaf6ef",border:"1px solid #1a7a4a",borderRadius:7,fontSize:12,color:"#1a7a4a",fontWeight:500}}>✓ Saved to library and training dataset</div>}
+
+              {/* Challenge Diagnosis */}
+              {report && !challengeMode && (
+                <div style={{marginTop:8,textAlign:"right"}}>
+                  <button className="btn btn-o btn-sm" onClick={()=>setChallengeMode(true)}>
+                    ⚡ Challenge this diagnosis
+                  </button>
+                </div>
+              )}
+              {challengeMode && (
+                <div style={{marginTop:10,padding:"12px 14px",background:"#f0f4ff",border:"1.5px solid #1a5fa8",borderRadius:8}}>
+                  <div style={{fontSize:12,fontWeight:600,color:"#1a5fa8",marginBottom:8}}>Challenge the AI Diagnosis</div>
+                  <div style={{fontSize:11,color:"#4a6277",marginBottom:10,lineHeight:1.6}}>
+                    Enter what you think the correct diagnosis is. Claude will re-examine the ECG specifically comparing both interpretations.
+                  </div>
+                  <input className="inp" style={{marginBottom:8}} value={challengeDx} placeholder="Your suspected diagnosis e.g. Hyperacute Anterior STEMI (LAD)" onChange={e=>setChallengeDx(e.target.value)}/>
+                  <div style={{display:"flex",gap:8}}>
+                    <button className="btn btn-n btn-sm" disabled={challengeLoading||!challengeDx} onClick={runChallenge} style={{flex:1,justifyContent:"center"}}>
+                      {challengeLoading?<><span className="spinner"/>Re-analysing…</>:"🔄 Re-run Analysis"}
+                    </button>
+                    <button className="btn btn-o btn-sm" onClick={()=>{setChallengeMode(false);setChallengeDx("");setChallengeResult(null);}}>Cancel</button>
+                  </div>
+                </div>
+              )}
+              {challengeResult && (
+                <div className="card fu" style={{marginTop:10,border:"1.5px solid #1a5fa8"}}>
+                  <div className="cb">
+                    <div style={{fontWeight:600,fontSize:13,color:"#1a5fa8",marginBottom:10}}>⚡ Challenge Result</div>
+                    <div style={{display:"grid",gap:8}}>
+                      {[
+                        ["Original AI interpretation", challengeResult.original_interpretation, "#7a95a8"],
+                        ["Your challenge", challengeResult.challenged_diagnosis, "#1a5fa8"],
+                        ["Original assessment", challengeResult.original_assessment, challengeResult.original_assessment?.startsWith("REFUTED")?"#c0392b":"#1a7a4a"],
+                        ["Challenge assessment", challengeResult.challenge_assessment, challengeResult.challenge_assessment?.startsWith("SUPPORTED")?"#1a7a4a":"#c0392b"],
+                        ["Final verdict", challengeResult.final_verdict, "#0d1f35"],
+                      ].map(([label, val, color]) => val && (
+                        <div key={label} style={{padding:"8px 10px",background:"#f7f9fc",borderRadius:6,borderLeft:`3px solid ${color}`}}>
+                          <div style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:"#7a95a8",textTransform:"uppercase",letterSpacing:"0.07em",marginBottom:3}}>{label}</div>
+                          <div style={{fontSize:12,color:"#1a2b3c",lineHeight:1.6}}>{val}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
