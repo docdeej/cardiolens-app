@@ -2,48 +2,35 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>CardioLens — ECG Platform</title>
-<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@300;500;700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@300;500;700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html,body,#root{height:100%;background:#F0F4F8;color:#1a2b3c;font-family:'DM Sans',sans-serif}
+html,body,#root{height:100%;font-family:'DM Sans',sans-serif;background:#F0F4F8;color:#1a2b3c}
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:#c2cfe0;border-radius:4px}
-</style>
-</head>
-<body>
-<div id="root"></div>
-<script type="text/babel">
-
-const BACKEND_URL = "https://web-production-78de3.up.railway.app";
-
-const CSS = `
 .shell{display:flex;height:100vh;overflow:hidden}
-.sb{width:214px;flex-shrink:0;background:#0d1f35;display:flex;flex-direction:column}
+.sidebar{width:214px;flex-shrink:0;background:#0d1f35;display:flex;flex-direction:column}
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden}
 .topbar{height:52px;background:#fff;border-bottom:1px solid #dde5ef;display:flex;align-items:center;padding:0 20px;gap:12px;flex-shrink:0;box-shadow:0 1px 3px rgba(13,31,53,0.06)}
 .body{flex:1;overflow-y:auto;padding:20px}
 .sb-logo{padding:18px 16px 14px;border-bottom:1px solid rgba(255,255,255,0.07);display:flex;align-items:center;gap:10px}
 .sb-icon{width:32px;height:32px;background:#c0392b;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
-.sb-title{font-family:'Fraunces',serif;font-size:16px;font-weight:700;color:#fff;line-height:1.1}
-.sb-sub{font-family:'DM Mono',monospace;font-size:8px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.1em;margin-top:1px}
-.sb-nav{padding:10px 8px;flex:1}
+.sb-title{font-family:'Fraunces',serif;font-size:16px;font-weight:700;color:#fff}
+.sb-sub{font-family:'DM Mono',monospace;font-size:8px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.1em}
+.sb-nav{padding:10px 8px;flex:1;overflow-y:auto}
 .sb-grp{font-family:'DM Mono',monospace;font-size:8px;color:rgba(255,255,255,0.28);text-transform:uppercase;letter-spacing:0.12em;padding:10px 8px 3px}
 .sb-btn{display:flex;align-items:center;gap:9px;padding:8px 9px;border-radius:6px;cursor:pointer;border:none;background:transparent;width:100%;text-align:left;color:rgba(255,255,255,0.5);font-family:'DM Sans',sans-serif;font-size:13px;transition:all 0.14s}
 .sb-btn:hover{background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.85)}
-.sb-btn.on{background:rgba(192,57,43,0.22);color:#fff;font-weight:500}
-.sb-ico{font-size:14px;width:18px;text-align:center;flex-shrink:0}
-.sdot{width:5px;height:5px;border-radius:50%;background:transparent;margin-left:auto}
-.sb-btn.on .sdot{background:#e74c3c}
+.sb-btn.active{background:rgba(192,57,43,0.22);color:#fff;font-weight:500}
 .sb-foot{padding:12px 14px;border-top:1px solid rgba(255,255,255,0.06)}
 .ldot{width:7px;height:7px;border-radius:50%;background:#27ae60;animation:lp 2.5s infinite;flex-shrink:0}
 .ldot.off{background:#e74c3c;animation:none}
 @keyframes lp{0%,100%{box-shadow:0 0 0 0 rgba(39,174,96,0.4)}60%{box-shadow:0 0 0 6px rgba(39,174,96,0)}}
-.card{background:#fff;border:1px solid #dde5ef;border-radius:11px;box-shadow:0 1px 3px rgba(13,31,53,0.07),0 4px 12px rgba(13,31,53,0.05)}
+.card{background:#fff;border:1px solid #dde5ef;border-radius:11px;box-shadow:0 1px 3px rgba(13,31,53,0.07),0 4px 12px rgba(13,31,53,0.05);margin-bottom:14px}
 .ch{padding:16px 18px 0}.cb{padding:14px 18px 18px}
 .ct{font-family:'Fraunces',serif;font-size:15px;font-weight:500}
 .cs{font-family:'DM Mono',monospace;font-size:11px;color:#7a95a8;margin-top:2px}
@@ -54,61 +41,183 @@ const CSS = `
 .btn-g{background:#1a7a4a;color:#fff}.btn-g:hover{background:#1e9459}
 .btn-o{background:transparent;color:#0d1f35;border:1.5px solid #c2cfe0}.btn-o:hover{border-color:#0d1f35}
 .btn-sm{padding:6px 12px;font-size:12px;border-radius:6px}
+.btn-xs{padding:4px 9px;font-size:11px;border-radius:5px}
 .lbl{font-family:'DM Mono',monospace;font-size:10px;font-weight:500;color:#4a6277;text-transform:uppercase;letter-spacing:0.07em;display:block;margin-bottom:4px}
 .inp{width:100%;padding:7px 10px;border:1.5px solid #dde5ef;border-radius:6px;font-family:'DM Sans',sans-serif;font-size:13px;color:#1a2b3c;background:#fff;transition:border-color 0.14s}
 .inp:focus{outline:none;border-color:#0d1f35}
-.badge{display:inline-flex;align-items:center;padding:2px 7px;border-radius:4px;font-size:9px;font-weight:600;font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:0.04em}
+textarea.inp{resize:vertical;min-height:64px}
+.badge{display:inline-flex;align-items:center;padding:2px 7px;border-radius:4px;font-size:9px;font-weight:600;font-family:'DM Mono',monospace;text-transform:uppercase}
 .bg{background:#e6f7ef;color:#1a7a4a}.br{background:#fdecea;color:#c0392b}
-.ba{background:#fef3e2;color:#d4820a}.bn{background:#e8edf3;color:#1a3350}
-.rb{border-left:3px solid #dde5ef;padding:9px 13px;margin-bottom:8px;border-radius:0 7px 7px 0;background:#f7f9fc}
-.rb-hi{border-color:#0d1f35;background:#eef3fb}.rb-warn{border-color:#d4820a;background:#fef9ec}
-.rb-crit{border-color:#c0392b;background:#fef7f6}
-.rlbl{font-family:'DM Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:0.08em;color:#7a95a8;margin-bottom:3px}
-.rtxt{font-size:13px;color:#1a2b3c;line-height:1.7}
-.uzone{border:2px dashed #c2cfe0;border-radius:10px;cursor:pointer;transition:all 0.18s;background:#f7f9fc;text-align:center;padding:28px 20px}
+.ba{background:#fef3e2;color:#d4820a}.bb{background:#e8f0fb;color:#1a5fa8}.bn{background:#e8edf3;color:#1a3350}
+.uzone{border:2px dashed #c2cfe0;border-radius:10px;cursor:pointer;background:#f7f9fc;text-align:center;padding:28px 20px;transition:all 0.18s}
 .uzone:hover{border-color:#0d1f35;background:#eef3fb}
 .uzone.filled{border-style:solid;border-color:#0d1f35;background:#fff;padding:12px;cursor:default}
-.crit-box{background:#fdecea;border:1.5px solid #c0392b;border-radius:9px;padding:12px 16px;display:flex;gap:12px;margin-bottom:12px}
-.ok-box{background:#eaf6ef;border:1.5px solid #1a7a4a;border-radius:9px;padding:12px 16px;display:flex;gap:12px;margin-bottom:12px}
+.rb{border-left:3px solid #dde5ef;padding:9px 13px;margin-bottom:8px;border-radius:0 7px 7px 0;background:#f7f9fc}
+.rb-blue{border-color:#0d1f35;background:#eef3fb}.rb-amber{border-color:#d4820a;background:#fef9ec}
+.rb-red{border-color:#c0392b;background:#fef7f6}.rb-green{border-color:#1a7a4a;background:#eaf6ef}
+.rlbl{font-family:'DM Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:0.08em;color:#7a95a8;margin-bottom:3px}
+.rtxt{font-size:13px;color:#1a2b3c;line-height:1.7}
+.alert-box{border-radius:9px;padding:12px 16px;display:flex;gap:12px;margin-bottom:12px}
+.alert-crit{background:#fdecea;border:1.5px solid #c0392b}
+.alert-ok{background:#eaf6ef;border:1.5px solid #1a7a4a}
 .alert-icon{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700;flex-shrink:0}
-@keyframes fu{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.tab-bar{display:flex;border-bottom:2px solid #dde5ef;margin-bottom:14px;flex-wrap:wrap}
+.tab{padding:8px 16px;font-size:13px;font-weight:500;color:#7a95a8;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all 0.14s}
+.tab:hover{color:#1a2b3c}.tab.active{color:#0d1f35;border-bottom-color:#0d1f35;font-weight:600}
+.page-title{font-family:'Fraunces',serif;font-size:22px;font-weight:500;color:#1a2b3c;margin-bottom:4px}
+.page-sub{font-size:13px;color:#4a6277;margin-bottom:18px}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 @keyframes spin{to{transform:rotate(360deg)}}
-.fu{animation:fu 0.28s ease forwards}
-.spinr{animation:spin 0.75s linear infinite;display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,0.4);border-top-color:#fff;border-radius:50%}
-.bc{font-family:'DM Mono',monospace;font-size:11px;color:#7a95a8;display:flex;align-items:center;gap:5px}
-.bca{color:#1a2b3c;font-weight:500}
-.pdf-page{background:#fff;width:100%;border:1px solid #dde5ef;border-radius:8px;padding:28px 32px;box-shadow:0 2px 12px rgba(13,31,53,0.08)}
-.pdf-st{font-family:'DM Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:0.1em;color:#0d1f35;border-bottom:1px solid #dde5ef;padding-bottom:4px;margin:14px 0 8px}
-.pdf-finding{font-size:12px;padding:7px 11px;background:#f7f9fc;border-left:3px solid #0d1f35;margin-bottom:5px;border-radius:0 4px 4px 0;line-height:1.6;color:#1a2b3c}
-.pdf-finding.crit{border-color:#c0392b;background:#fef7f6}
-.pdf-finding.warn{border-color:#d4820a;background:#fef9ec}
-`;
+.fu{animation:fadeUp 0.28s ease forwards}
+.spinner{display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,0.4);border-top-color:#fff;border-radius:50%;animation:spin 0.75s linear infinite}
+.spinner-dark{display:inline-block;width:13px;height:13px;border:2px solid rgba(13,31,53,0.2);border-top-color:#0d1f35;border-radius:50%;animation:spin 0.75s linear infinite}
+.grid-2{display:grid;grid-template-columns:1fr 320px;gap:18px;align-items:start}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.progress-bar{height:6px;background:#eef2f7;border-radius:3px;overflow:hidden;margin-top:6px}
+.progress-fill{height:100%;background:#0d1f35;border-radius:3px;transition:width 0.5s ease}
+.case-card{background:#fff;border:1px solid #dde5ef;border-radius:9px;padding:14px;cursor:pointer;transition:all 0.14s}
+.case-card:hover{border-color:#0d1f35;box-shadow:0 2px 8px rgba(13,31,53,0.1)}
+.case-card.selected{border-color:#0d1f35;background:#f4f7fc}
+.stat-box{background:#fff;border:1px solid #dde5ef;border-radius:9px;padding:14px;text-align:center}
+.stat-num{font-family:'Fraunces',serif;font-size:32px;font-weight:300;color:#0d1f35;line-height:1}
+.stat-lbl{font-family:'DM Mono',monospace;font-size:9px;color:#7a95a8;text-transform:uppercase;letter-spacing:0.08em;margin-top:4px}
+.diag-step{display:flex;align-items:center;gap:0}
+.step-circle{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:11px;font-weight:500;flex-shrink:0;transition:all 0.25s}
+.step-done{background:#0d1f35;color:#fff}
+.step-active{background:#c0392b;color:#fff;box-shadow:0 0 0 4px rgba(192,57,43,0.16)}
+.step-pending{background:#eef2f7;color:#7a95a8;border:1.5px solid #dde5ef}
+.step-line{flex:1;height:2px;background:#dde5ef;margin:0 4px;transition:background 0.25s}
+.step-done-line{background:#0d1f35}
+.lead-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:4px}
+.lead-cell{background:#f7f9fc;border:1px solid #dde5ef;border-radius:5px;padding:8px 10px}
+.lead-name{font-family:'DM Mono',monospace;font-size:9px;color:#7a95a8;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:3px}
+.lead-val{font-size:12px;color:#1a2b3c;line-height:1.5}
+.verify-bar{background:#fff8ec;border:1.5px solid #d4820a;border-radius:9px;padding:12px 16px;display:flex;gap:12px;align-items:center;margin-top:10px}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" data-presets="react">
 
-const LABELS = {
-  rate:"Rate & Rhythm",rhythm:"Rhythm",p_waves:"P Waves",
-  pr_interval:"PR Interval",qrs_complex:"QRS Complex",
-  st_t_waves:"ST Segment & T Waves",qt_interval:"QT Interval",
-  axis:"Electrical Axis",interpretation:"Interpretation",
-  differentials:"Differentials",management:"Management"
+const BACKEND = "https://web-production-78de3.up.railway.app";
+
+const api = async (path, opts={}) => {
+  const res = await fetch(BACKEND + path, opts);
+  if (!res.ok) { const e = await res.json().catch(()=>({detail:res.statusText})); throw new Error(e.detail||`Error ${res.status}`); }
+  return res.json();
 };
 
+const confStr = c => typeof c === "object" ? (c?.overall || "MEDIUM") : (c || "MEDIUM");
+
+const CATEGORIES = ["Rhythm disorders","Ischaemia & ACS","Conduction","Hypertrophy & Structural","Emergency patterns","Normal","Other"];
+const DIFFICULTY = ["Easy","Medium","Hard","Expert"];
+
+const LABELS = {
+  rate:"Rate",rhythm:"Rhythm",p_waves:"P Waves",pr_interval:"PR Interval",
+  qrs_complex:"QRS Complex",st_t_waves:"ST & T Waves",qt_interval:"QT Interval",
+  axis:"Electrical Axis",stemi_territory:"STEMI Territory",other_findings:"Other Findings"
+};
+
+// ─── Shared Upload Zone ────────────────────────────────────────
+function UploadZone({ imgSrc, onFile, onClear, label="Upload ECG image" }) {
+  const ref = React.useRef(null);
+  return (
+    <div className={`uzone ${imgSrc?"filled":""}`} onClick={()=>!imgSrc&&ref.current?.click()}>
+      <input ref={ref} type="file" accept="image/*" style={{display:"none"}}
+        onChange={e=>{ const f=e.target.files?.[0]; if(f) onFile(f); }} />
+      {imgSrc ? (
+        <div>
+          <img src={imgSrc} alt="ECG" style={{width:"100%",maxHeight:280,objectFit:"contain",borderRadius:7,border:"1px solid #dde5ef"}} />
+          <button className="btn btn-o btn-xs" style={{marginTop:8}} onClick={e=>{e.stopPropagation();onClear();}}>Replace image</button>
+        </div>
+      ) : (
+        <div>
+          <div style={{fontSize:32,marginBottom:8}}>📋</div>
+          <div style={{fontWeight:600,fontSize:14,marginBottom:4}}>{label}</div>
+          <div style={{fontSize:12,color:"#7a95a8",lineHeight:1.6}}>Click to browse · JPG or PNG<br/>Works with phone photos of paper ECGs</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Findings Display ──────────────────────────────────────────
+function FindingsPanel({ findings, confidence, imageQuality }) {
+  const f = findings || {};
+  const isCrit = f.critical_alert && f.critical_alert !== "null" && f.critical_alert !== "none" && f.critical_alert !== null;
+  return (
+    <div>
+      {isCrit && (
+        <div className="alert-box alert-crit fu">
+          <div className="alert-icon" style={{background:"#c0392b"}}>!</div>
+          <div>
+            <div style={{fontWeight:600,fontSize:13,color:"#c0392b",marginBottom:3}}>Critical Finding</div>
+            <div style={{fontSize:12,color:"#7a1a1a",lineHeight:1.6}}>{f.critical_alert}</div>
+          </div>
+        </div>
+      )}
+      {!isCrit && f.interpretation && (
+        <div className="alert-box alert-ok fu">
+          <div className="alert-icon" style={{background:"#1a7a4a"}}>✓</div>
+          <div>
+            <div style={{fontWeight:600,fontSize:13,color:"#1a7a4a",marginBottom:3}}>Interpretation</div>
+            <div style={{fontSize:12,color:"#1a3c2a",lineHeight:1.6}}>{f.interpretation}</div>
+          </div>
+        </div>
+      )}
+      <div style={{maxHeight:360,overflowY:"auto"}}>
+        {Object.entries(f)
+          .filter(([k])=>!["critical_alert","interpretation","confidence","image_quality","differentials","management","findings_limited_by_quality","other_findings","stemi_territory"].includes(k))
+          .map(([k,v])=> v && v !== "null" && (
+            <div key={k} className="rb">
+              <div className="rlbl">{LABELS[k]||k}</div>
+              <div className="rtxt">{Array.isArray(v)?v.join(", "):typeof v==="object"?JSON.stringify(v):String(v)}</div>
+            </div>
+          ))
+        }
+        {f.other_findings?.length > 0 && (
+          <div className="rb"><div className="rlbl">Other Findings</div>
+            <div className="rtxt">{Array.isArray(f.other_findings)?f.other_findings.join(" · "):f.other_findings}</div>
+          </div>
+        )}
+        {f.stemi_territory && f.stemi_territory !== "None" && f.stemi_territory !== "Unable to assess" && (
+          <div className="rb rb-red"><div className="rlbl">STEMI Territory</div>
+            <div className="rtxt">{f.stemi_territory}</div>
+          </div>
+        )}
+        {f.differentials?.length > 0 && (
+          <div className="rb rb-blue"><div className="rlbl">Differentials</div>
+            <div className="rtxt">{Array.isArray(f.differentials)?f.differentials.join(" · "):f.differentials}</div>
+          </div>
+        )}
+        {f.management && (
+          <div className="rb rb-amber"><div className="rlbl">Management</div>
+            <div className="rtxt">{f.management}</div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── ANALYZER ─────────────────────────────────────────────────
 function Analyzer({ onExport }) {
   const [imgSrc, setImgSrc] = React.useState(null);
   const [imgFile, setImgFile] = React.useState(null);
-  const [info, setInfo] = React.useState({ age:"", sex:"M", complaint:"", context:"" });
+  const [info, setInfo] = React.useState({age:"",sex:"M",complaint:"",context:""});
   const [report, setReport] = React.useState(null);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState(null);
-  const [viewTab, setViewTab] = React.useState("original");
-  const fileRef = React.useRef(null);
+  const [saving, setSaving] = React.useState(false);
+  const [saved, setSaved] = React.useState(false);
+  const [verifyMode, setVerifyMode] = React.useState(false);
+  const [correctDx, setCorrectDx] = React.useState("");
+  const [category, setCategory] = React.useState("Rhythm disorders");
   const setI = (k,v) => setInfo(p=>({...p,[k]:v}));
 
-  const handleFile = (e) => {
-    const file = e.target.files?.[0]; if (!file) return;
-    setImgFile(file); setReport(null); setError(null);
-    const reader = new FileReader();
-    reader.onload = ev => setImgSrc(ev.target.result);
-    reader.readAsDataURL(file);
+  const handleFile = f => {
+    setImgFile(f); setReport(null); setError(null); setSaved(false);
+    const r = new FileReader(); r.onload = e => setImgSrc(e.target.result); r.readAsDataURL(f);
   };
 
   const analyze = async () => {
@@ -121,280 +230,783 @@ function Analyzer({ onExport }) {
       if (info.sex) form.append("sex", info.sex);
       if (info.complaint) form.append("complaint", info.complaint);
       if (info.context) form.append("context", info.context);
-      const res = await fetch(`${BACKEND_URL}/analyze`, { method:"POST", body:form });
-      if (!res.ok) { const e = await res.json(); throw new Error(e.detail || res.statusText); }
-      const result = await res.json();
+      const result = await api("/analyze", {method:"POST", body:form});
       setReport(result);
     } catch(e) { setError(e.message); }
     setLoading(false);
   };
 
-  const f = report?.ecg_findings || {};
-  const isCritical = f.critical_alert && f.critical_alert.toLowerCase() !== "null" && f.critical_alert.toLowerCase() !== "none";
+  const saveToLibrary = async () => {
+    if (!report) return;
+    setSaving(true);
+    try {
+      await api(`/cases/${report.report_id}/verify`, {
+        method:"POST",
+        body: (() => { const f=new FormData(); f.append("correct_diagnosis", correctDx||report.ecg_findings?.interpretation||""); f.append("ai_was_correct", "true"); f.append("category", category); return f; })()
+      });
+      setSaved(true); setVerifyMode(false);
+    } catch(e) { setError(e.message); }
+    setSaving(false);
+  };
 
-  return React.createElement("div", {style:{display:"grid",gridTemplateColumns:"1fr 340px",gap:18,alignItems:"start"}},
-    React.createElement("div", {style:{display:"flex",flexDirection:"column",gap:14}},
-      React.createElement("div", {className:"card"},
-        React.createElement("div", {className:"ch", style:{paddingBottom:14}},
-          React.createElement("div", {style:{display:"flex",justifyContent:"space-between",alignItems:"center"}},
-            React.createElement("div", null,
-              React.createElement("div", {className:"ct"}, "ECG Upload & Analysis"),
-              React.createElement("div", {className:"cs"}, "Upload a real ECG photo for AI interpretation")
-            ),
-            report && React.createElement("span", {className:`badge ${isCritical?"br":"bg"}`}, isCritical?"⚠ Critical":"✓ Complete")
-          )
-        ),
-        React.createElement("div", {className:"cb", style:{paddingTop:0}},
-          React.createElement("div", {
-            className:`uzone ${imgSrc?"filled":""}`,
-            onClick:()=>!imgSrc&&fileRef.current?.click()
-          },
-            React.createElement("input", {ref:fileRef,type:"file",accept:"image/*",style:{display:"none"},onChange:handleFile}),
-            imgSrc ? React.createElement("div", null,
-              React.createElement("div", {style:{display:"flex",gap:0,borderBottom:"2px solid #dde5ef",marginBottom:10}},
-                ["original","Digital Reconstruction"].map((lbl,i)=>{
-                  const id = i===0?"original":"recon";
-                  return React.createElement("div", {
-                    key:id,
-                    style:{padding:"8px 16px",fontSize:13,fontWeight:500,color:viewTab===id?"#0d1f35":"#7a95a8",cursor:"pointer",borderBottom:`2px solid ${viewTab===id?"#0d1f35":"transparent"}`,marginBottom:-2},
-                    onClick:()=>setViewTab(id)
-                  }, lbl);
-                }),
-                React.createElement("button", {
-                  className:"btn btn-o btn-sm",
-                  style:{marginLeft:"auto",alignSelf:"center"},
-                  onClick:()=>{setImgSrc(null);setImgFile(null);setReport(null);setError(null);}
-                }, "Replace")
-              ),
-              viewTab==="original"
-                ? React.createElement("img", {src:imgSrc,style:{width:"100%",maxHeight:320,objectFit:"contain",borderRadius:7,border:"1px solid #dde5ef"}})
-                : React.createElement("div", {style:{textAlign:"center",padding:"20px",color:"#7a95a8",fontFamily:"'DM Mono',monospace",fontSize:12}}, "Digital reconstruction coming in next update")
-            ) : React.createElement("div", null,
-              React.createElement("div", {style:{fontSize:36,marginBottom:10}}, "📋"),
-              React.createElement("div", {style:{fontWeight:600,fontSize:15,marginBottom:5}}, "Upload a real ECG image"),
-              React.createElement("div", {style:{fontSize:12,color:"#7a95a8",lineHeight:1.7}},
-                "Tap to choose a photo · JPG or PNG", React.createElement("br"),
-                "Works with phone photos of paper ECGs", React.createElement("br"),
-                React.createElement("span", {style:{color:"#0d1f35",fontWeight:500}}, "Claude Vision reads the actual waveform")
-              )
-            )
-          ),
-          React.createElement("div", {style:{display:"grid",gridTemplateColumns:"1fr 1fr 70px 55px",gap:10,marginTop:12}},
-            React.createElement("div", null,
-              React.createElement("label", {className:"lbl"}, "Chief Complaint"),
-              React.createElement("select", {className:"inp",value:info.complaint,onChange:e=>setI("complaint",e.target.value)},
-                React.createElement("option", {value:""}, "Select…"),
-                ["Chest Pain","Palpitations","Syncope","Dyspnoea","Heart Failure","Pre-op","Cardiac Arrest","Dizziness","Shock","Routine"].map(c=>React.createElement("option",{key:c},c))
-              )
-            ),
-            React.createElement("div", null,
-              React.createElement("label", {className:"lbl"}, "Clinical Context"),
-              React.createElement("input", {className:"inp",value:info.context,placeholder:"e.g. known HTN…",onChange:e=>setI("context",e.target.value)})
-            ),
-            React.createElement("div", null,
-              React.createElement("label", {className:"lbl"}, "Age"),
-              React.createElement("input", {className:"inp",type:"number",value:info.age,placeholder:"yrs",onChange:e=>setI("age",e.target.value)})
-            ),
-            React.createElement("div", null,
-              React.createElement("label", {className:"lbl"}, "Sex"),
-              React.createElement("select", {className:"inp",value:info.sex,onChange:e=>setI("sex",e.target.value)},
-                React.createElement("option",null,"M"), React.createElement("option",null,"F")
-              )
-            )
-          )
-        )
-      ),
-      error && React.createElement("div", {className:"card fu",style:{borderColor:"#c0392b"}},
-        React.createElement("div", {className:"cb"},
-          React.createElement("div", {style:{fontWeight:600,color:"#c0392b",marginBottom:6,fontSize:13}}, "Analysis Error"),
-          React.createElement("div", {style:{fontSize:13,color:"#7a1a1a",lineHeight:1.6}}, error)
-        )
-      ),
-      report && React.createElement("div", {className:"card fu"},
-        React.createElement("div", {className:"ch",style:{paddingBottom:12}},
-          React.createElement("div", {style:{display:"flex",justifyContent:"space-between",alignItems:"center"}},
-            React.createElement("div", {className:"ct",style:{fontSize:14}}, "ECG Findings"),
-            React.createElement("div", {style:{display:"flex",gap:6}},
-              React.createElement("span", {className:`badge ${report.confidence==="HIGH"?"bg":report.confidence==="LOW"?"br":"ba"}`}, report.confidence+" confidence"),
-              React.createElement("span", {className:`badge ${report.image_quality==="GOOD"?"bg":report.image_quality==="POOR"?"br":"ba"}`}, report.image_quality+" quality")
-            )
-          )
-        ),
-        React.createElement("div", {className:"cb",style:{paddingTop:0,maxHeight:400,overflowY:"auto"}},
-          Object.entries(f)
-            .filter(([k])=>!["critical_alert","interpretation","confidence","image_quality","differentials"].includes(k))
-            .map(([k,v])=>v&&React.createElement("div",{key:k,className:"rb fu"},
-              React.createElement("div",{className:"rlbl"},LABELS[k]||k),
-              React.createElement("div",{className:"rtxt"},v)
-            )),
-          f.differentials?.length>0 && React.createElement("div",{className:"rb rb-hi fu"},
-            React.createElement("div",{className:"rlbl"},"Differentials"),
-            React.createElement("div",{className:"rtxt"},Array.isArray(f.differentials)?f.differentials.join(" · "):f.differentials)
-          ),
-          f.management && React.createElement("div",{className:"rb rb-warn fu"},
-            React.createElement("div",{className:"rlbl"},"Management"),
-            React.createElement("div",{className:"rtxt"},f.management)
-          )
-        )
-      ),
-      report && React.createElement("button",{className:"btn btn-g fu",style:{width:"100%",justifyContent:"center"},onClick:()=>onExport({report,imgSrc,info})},
-        "📄 Export PDF Report"
-      )
-    ),
-    React.createElement("div", {style:{display:"flex",flexDirection:"column",gap:12}},
-      React.createElement("div", {className:"card"},
-        React.createElement("div", {className:"ch"},
-          React.createElement("div", {className:"ct",style:{fontSize:14}}, "AI Analysis"),
-          React.createElement("div", {className:"cs"}, "Powered by Claude Vision · Server-side")
-        ),
-        React.createElement("div", {className:"cb"},
-          React.createElement("button", {
-            className:"btn btn-n",
-            style:{width:"100%",justifyContent:"center",marginBottom:12},
-            onClick:analyze, disabled:loading||!imgFile
-          },
-            loading ? React.createElement(React.Fragment,null,React.createElement("span",{className:"spinr"})," Analyzing ECG…") : "🔬 Analyze Uploaded ECG"
-          ),
-          loading && React.createElement("div", {style:{paddingTop:4}},
-            ["Sending image to server…","Claude Vision reading ECG…","Measuring intervals…","Generating clinical report…"].map((s,i)=>
-              React.createElement("div",{key:i,className:"fu",style:{fontSize:11,color:"#4a6277",padding:"4px 0",fontFamily:"'DM Mono',monospace",animationDelay:`${i*0.2}s`,opacity:0}},
-                React.createElement("span",{style:{color:"#0d1f35"}},"→")," ",s
-              )
-            )
-          ),
-          !loading && !imgFile && React.createElement("div",{style:{textAlign:"center",fontSize:12,color:"#7a95a8",fontFamily:"'DM Mono',monospace"}}, "Upload an ECG image first")
-        )
-      ),
-      report && React.createElement(React.Fragment, null,
-        React.createElement("div", {className:`${isCritical?"crit-box":"ok-box"} fu`},
-          React.createElement("div", {className:"alert-icon",style:{background:isCritical?"#c0392b":"#1a7a4a"}}, isCritical?"!":"✓"),
-          React.createElement("div", null,
-            React.createElement("div", {style:{fontWeight:600,fontSize:13,color:isCritical?"#c0392b":"#1a7a4a",marginBottom:3}}, isCritical?"Critical Finding":"Primary Interpretation"),
-            React.createElement("div", {style:{fontSize:12,lineHeight:1.6,color:isCritical?"#7a1a1a":"#1a3c2a"}}, isCritical?f.critical_alert:f.interpretation)
-          )
-        ),
-        React.createElement("div", {className:"card fu"},
-          React.createElement("div", {className:"ch"}, React.createElement("div", {className:"ct",style:{fontSize:14}}, "Report Info")),
-          React.createElement("div", {className:"cb"},
-            [["Report ID",report.report_id],["Time",new Date(report.timestamp).toLocaleString()],["Patient",report.patient_info.age?`${report.patient_info.age}y ${report.patient_info.sex}`:"—"],["Complaint",report.patient_info.complaint||"—"],["Confidence",report.confidence],["Image Quality",report.image_quality]].map(([k,v])=>
-              React.createElement("div",{key:k,style:{display:"grid",gridTemplateColumns:"110px 1fr",gap:6,padding:"6px 0",borderBottom:"1px solid #f0f4f8",fontSize:12}},
-                React.createElement("span",{style:{fontFamily:"'DM Mono',monospace",fontSize:10,color:"#7a95a8"}},k),
-                React.createElement("span",{style:{color:"#1a2b3c",fontWeight:500}},v)
-              )
-            )
-          )
-        )
-      )
-    )
+  const f = report?.ecg_findings || {};
+  const conf = confStr(report?.confidence);
+
+  return (
+    <div className="grid-2">
+      <div>
+        <div className="card">
+          <div className="ch" style={{paddingBottom:14}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <div><div className="ct">ECG Upload & Analysis</div><div className="cs">Upload a real ECG photo for AI interpretation</div></div>
+              {report && <span className={`badge ${f.critical_alert&&f.critical_alert!=="null"?"br":conf==="HIGH"?"bg":"ba"}`}>{conf} confidence</span>}
+            </div>
+          </div>
+          <div className="cb" style={{paddingTop:0}}>
+            <UploadZone imgSrc={imgSrc} onFile={handleFile} onClear={()=>{setImgSrc(null);setImgFile(null);setReport(null);setError(null);setSaved(false);}} />
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 70px 55px",gap:10,marginTop:12}}>
+              <div><label className="lbl">Chief Complaint</label>
+                <select className="inp" value={info.complaint} onChange={e=>setI("complaint",e.target.value)}>
+                  <option value="">Select…</option>
+                  {["Chest Pain","Palpitations","Syncope","Dyspnoea","Heart Failure","Pre-op","Cardiac Arrest","Dizziness","Shock","Routine"].map(c=><option key={c}>{c}</option>)}
+                </select>
+              </div>
+              <div><label className="lbl">Clinical Context</label>
+                <input className="inp" value={info.context} placeholder="Known HTN, DM…" onChange={e=>setI("context",e.target.value)}/>
+              </div>
+              <div><label className="lbl">Age</label><input className="inp" type="number" value={info.age} placeholder="yrs" onChange={e=>setI("age",e.target.value)}/></div>
+              <div><label className="lbl">Sex</label>
+                <select className="inp" value={info.sex} onChange={e=>setI("sex",e.target.value)}><option>M</option><option>F</option></select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {error && <div className="card fu" style={{borderColor:"#c0392b"}}><div className="cb"><div style={{fontWeight:600,color:"#c0392b",marginBottom:6}}>Error</div><div style={{fontSize:13,color:"#7a1a1a"}}>{error}</div></div></div>}
+
+        {report && (
+          <div className="card fu">
+            <div className="ch" style={{paddingBottom:12}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <div className="ct" style={{fontSize:14}}>ECG Findings</div>
+                <div style={{display:"flex",gap:6}}>
+                  <span className={`badge ${report.image_quality==="GOOD"?"bg":report.image_quality==="POOR"?"br":"ba"}`}>{report.image_quality} quality</span>
+                </div>
+              </div>
+            </div>
+            <div className="cb" style={{paddingTop:0}}>
+              <FindingsPanel findings={f} confidence={report.confidence} imageQuality={report.image_quality}/>
+              {/* Verify + Save bar */}
+              {!saved && (
+                <div className="verify-bar">
+                  <div style={{fontSize:13,color:"#7a4a00",flex:1}}>
+                    {verifyMode ? "Confirm diagnosis before saving to library:" : "Save this case to your ECG library?"}
+                  </div>
+                  {verifyMode ? (
+                    <div style={{display:"flex",gap:8,alignItems:"center",flex:2}}>
+                      <select className="inp" style={{flex:1}} value={category} onChange={e=>setCategory(e.target.value)}>
+                        {CATEGORIES.map(c=><option key={c}>{c}</option>)}
+                      </select>
+                      <input className="inp" style={{flex:2}} value={correctDx} placeholder="Confirmed diagnosis…" onChange={e=>setCorrectDx(e.target.value)}/>
+                      <button className="btn btn-n btn-sm" disabled={saving||!correctDx} onClick={saveToLibrary}>
+                        {saving?<span className="spinner"/>:"Save"}
+                      </button>
+                      <button className="btn btn-o btn-sm" onClick={()=>setVerifyMode(false)}>Cancel</button>
+                    </div>
+                  ) : (
+                    <div style={{display:"flex",gap:8}}>
+                      <button className="btn btn-n btn-sm" onClick={()=>setVerifyMode(true)}>+ Add to Library</button>
+                    </div>
+                  )}
+                </div>
+              )}
+              {saved && <div style={{marginTop:10,padding:"8px 12px",background:"#eaf6ef",border:"1px solid #1a7a4a",borderRadius:7,fontSize:12,color:"#1a7a4a",fontWeight:500}}>✓ Saved to library and training dataset</div>}
+            </div>
+          </div>
+        )}
+
+        {report && <button className="btn btn-g fu" style={{width:"100%",justifyContent:"center"}} onClick={()=>onExport({report,imgSrc,info})}>📄 Export PDF Report</button>}
+      </div>
+
+      {/* RIGHT */}
+      <div>
+        <div className="card">
+          <div className="ch"><div className="ct" style={{fontSize:14}}>AI Analysis</div><div className="cs">Claude Vision · Server-side</div></div>
+          <div className="cb">
+            <button className="btn btn-n" style={{width:"100%",justifyContent:"center",marginBottom:12}} onClick={analyze} disabled={loading||!imgFile}>
+              {loading?<><span className="spinner"/> Analyzing…</>:"🔬 Analyze Uploaded ECG"}
+            </button>
+            {loading&&["Sending to server…","Claude Vision reading ECG…","Measuring intervals…","Generating report…"].map((s,i)=>(
+              <div key={i} style={{fontSize:11,color:"#4a6277",padding:"4px 0",fontFamily:"'DM Mono',monospace"}}>→ {s}</div>
+            ))}
+            {!loading&&!imgFile&&<div style={{textAlign:"center",fontSize:12,color:"#7a95a8",fontFamily:"'DM Mono',monospace"}}>Upload an ECG first</div>}
+          </div>
+        </div>
+        {report && (
+          <div className="card fu">
+            <div className="ch"><div className="ct" style={{fontSize:14}}>Report Info</div></div>
+            <div className="cb">
+              {[["ID",report.report_id],["Time",new Date(report.timestamp).toLocaleString()],["Patient",report.patient_info?.age?`${report.patient_info.age}y ${report.patient_info.sex}`:"—"],["Complaint",report.patient_info?.complaint||"—"]].map(([k,v])=>(
+                <div key={k} style={{display:"grid",gridTemplateColumns:"80px 1fr",gap:6,padding:"5px 0",borderBottom:"1px solid #f0f4f8",fontSize:12}}>
+                  <span style={{fontFamily:"'DM Mono',monospace",fontSize:10,color:"#7a95a8"}}>{k}</span>
+                  <span style={{color:"#1a2b3c",fontWeight:500}}>{v}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
+// ─── CASE BUILDER ──────────────────────────────────────────────
+function CaseBuilder() {
+  const [imgSrc, setImgSrc] = React.useState(null);
+  const [imgFile, setImgFile] = React.useState(null);
+  const [form, setForm] = React.useState({age:"",sex:"M",complaint:"",context:"",correctDiagnosis:"",category:"Rhythm disorders",difficulty:"Medium",notes:""});
+  const [loading, setLoading] = React.useState(false);
+  const [result, setResult] = React.useState(null);
+  const [error, setError] = React.useState(null);
+  const setF = (k,v) => setForm(p=>({...p,[k]:v}));
+
+  const handleFile = f => {
+    setImgFile(f); setResult(null); setError(null);
+    const r = new FileReader(); r.onload = e => setImgSrc(e.target.result); r.readAsDataURL(f);
+  };
+
+  const submit = async () => {
+    if (!imgFile || !form.correctDiagnosis) { setError("Upload an ECG image and enter the correct diagnosis."); return; }
+    setLoading(true); setError(null); setResult(null);
+    try {
+      const fd = new FormData();
+      fd.append("image", imgFile);
+      Object.entries(form).forEach(([k,v])=>{ if(v) fd.append(k==="correctDiagnosis"?"correct_diagnosis":k, v); });
+      const res = await api("/cases/save", {method:"POST", body:fd});
+      setResult(res);
+      setImgSrc(null); setImgFile(null);
+      setForm({age:"",sex:"M",complaint:"",context:"",correctDiagnosis:"",category:"Rhythm disorders",difficulty:"Medium",notes:""});
+    } catch(e) { setError(e.message); }
+    setLoading(false);
+  };
+
+  return (
+    <div className="grid-2">
+      <div>
+        <div className="card">
+          <div className="ch"><div className="ct">Upload ECG Case</div><div className="cs">Add a labelled ECG to your training dataset</div></div>
+          <div className="cb">
+            <UploadZone imgSrc={imgSrc} onFile={handleFile} onClear={()=>{setImgSrc(null);setImgFile(null);}} label="Upload ECG for case library"/>
+          </div>
+        </div>
+        <div className="card">
+          <div className="ch"><div className="ct">Case Details</div></div>
+          <div className="cb">
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
+              <div><label className="lbl">Correct Diagnosis *</label>
+                <input className="inp" value={form.correctDiagnosis} placeholder="e.g. Atrial Fibrillation with RVR" onChange={e=>setF("correctDiagnosis",e.target.value)}/>
+              </div>
+              <div><label className="lbl">Category *</label>
+                <select className="inp" value={form.category} onChange={e=>setF("category",e.target.value)}>
+                  {CATEGORIES.map(c=><option key={c}>{c}</option>)}
+                </select>
+              </div>
+              <div><label className="lbl">Chief Complaint</label>
+                <select className="inp" value={form.complaint} onChange={e=>setF("complaint",e.target.value)}>
+                  <option value="">Select…</option>
+                  {["Chest Pain","Palpitations","Syncope","Dyspnoea","Heart Failure","Pre-op","Cardiac Arrest","Dizziness","Routine"].map(c=><option key={c}>{c}</option>)}
+                </select>
+              </div>
+              <div><label className="lbl">Difficulty</label>
+                <select className="inp" value={form.difficulty} onChange={e=>setF("difficulty",e.target.value)}>
+                  {DIFFICULTY.map(d=><option key={d}>{d}</option>)}
+                </select>
+              </div>
+              <div><label className="lbl">Age</label><input className="inp" type="number" value={form.age} placeholder="yrs" onChange={e=>setF("age",e.target.value)}/></div>
+              <div><label className="lbl">Sex</label>
+                <select className="inp" value={form.sex} onChange={e=>setF("sex",e.target.value)}><option>M</option><option>F</option></select>
+              </div>
+            </div>
+            <div style={{marginBottom:12}}>
+              <label className="lbl">Clinical Context</label>
+              <input className="inp" value={form.context} placeholder="e.g. Known hypertensive, presenting with palpitations…" onChange={e=>setF("context",e.target.value)}/>
+            </div>
+            <div>
+              <label className="lbl">Teaching Notes (optional)</label>
+              <textarea className="inp" value={form.notes} placeholder="Key learning points, pitfalls, differential considerations…" onChange={e=>setF("notes",e.target.value)}/>
+            </div>
+          </div>
+        </div>
+        {error && <div className="card fu" style={{borderColor:"#c0392b"}}><div className="cb" style={{color:"#c0392b",fontSize:13}}>{error}</div></div>}
+        <button className="btn btn-n" style={{width:"100%",justifyContent:"center"}} onClick={submit} disabled={loading||!imgFile||!form.correctDiagnosis}>
+          {loading?<><span className="spinner"/> Saving case + running AI analysis…</>:"💾 Save to Library & Training Dataset"}
+        </button>
+      </div>
+
+      {/* RIGHT — guidance */}
+      <div>
+        <div className="card" style={{background:"#0d1f35",border:"none"}}>
+          <div className="cb">
+            <div style={{fontFamily:"'Fraunces',serif",fontSize:16,fontWeight:500,color:"#fff",marginBottom:10}}>Why Case Building Matters</div>
+            <div style={{fontSize:13,color:"rgba(255,255,255,0.7)",lineHeight:1.8}}>
+              Every ECG you add with a verified diagnosis becomes training data for the specialist ML model.
+            </div>
+            <div style={{marginTop:14,display:"flex",flexDirection:"column",gap:8}}>
+              {[
+                {n:"50",l:"Demo to colleagues"},
+                {n:"200",l:"Show to cardiologists"},
+                {n:"500",l:"Train first ML model"},
+                {n:"2,000",l:"Junior cardiologist accuracy"},
+                {n:"10,000",l:"Publication-grade dataset"},
+              ].map(({n,l})=>(
+                <div key={n} style={{display:"flex",gap:10,alignItems:"center"}}>
+                  <div style={{width:40,fontFamily:"'Fraunces',serif",fontSize:14,fontWeight:500,color:"#10b981",flexShrink:0}}>{n}</div>
+                  <div style={{fontSize:12,color:"rgba(255,255,255,0.6)"}}>{l}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {result && (
+          <div className="card fu" style={{borderColor:"#1a7a4a"}}>
+            <div className="cb">
+              <div style={{fontWeight:600,color:"#1a7a4a",marginBottom:8}}>✓ Case Saved</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                <div className="stat-box"><div className="stat-num">{result.report_id}</div><div className="stat-lbl">Report ID</div></div>
+                <div className="stat-box"><div className="stat-num">{result.training_samples}</div><div className="stat-lbl">Training Samples</div></div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="card">
+          <div className="ch"><div className="ct" style={{fontSize:14}}>Category Guide</div></div>
+          <div className="cb">
+            {[
+              {cat:"Rhythm disorders",ex:"AF, flutter, heart blocks, SVT"},
+              {cat:"Ischaemia & ACS",ex:"STEMI, NSTEMI, Wellens, de Winter"},
+              {cat:"Conduction",ex:"LBBB, RBBB, WPW, hemiblocks"},
+              {cat:"Hypertrophy & Structural",ex:"LVH, RVH, pericarditis"},
+              {cat:"Emergency patterns",ex:"VT, VF, torsades, complete AV block"},
+            ].map(({cat,ex})=>(
+              <div key={cat} style={{padding:"7px 0",borderBottom:"1px solid #f0f4f8"}}>
+                <div style={{fontSize:12,fontWeight:500,color:"#1a2b3c"}}>{cat}</div>
+                <div style={{fontSize:11,color:"#7a95a8",marginTop:1}}>{ex}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── LIBRARY ───────────────────────────────────────────────────
+function Library() {
+  const [cases, setCases] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  const [filter, setFilter] = React.useState("All");
+  const [search, setSearch] = React.useState("");
+  const [selected, setSelected] = React.useState(null);
+  const [selectedImg, setSelectedImg] = React.useState(null);
+  const [stats, setStats] = React.useState(null);
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (filter !== "All") params.append("category", filter);
+      if (search) params.append("search", search);
+      const [data, s] = await Promise.all([
+        api(`/cases?${params}`),
+        api("/training/stats")
+      ]);
+      setCases(data.cases || []);
+      setStats(s);
+    } catch(e) { console.error(e); }
+    setLoading(false);
+  };
+
+  React.useEffect(()=>{ load(); }, [filter, search]);
+
+  const loadImage = async (id) => {
+    try {
+      const d = await api(`/cases/${id}/image`);
+      setSelectedImg(`data:${d.media_type};base64,${d.b64}`);
+    } catch { setSelectedImg(null); }
+  };
+
+  const selectCase = (c) => {
+    setSelected(c); setSelectedImg(null);
+    loadImage(c.report_id);
+  };
+
+  const filterTabs = ["All", ...CATEGORIES];
+
+  return (
+    <div>
+      {/* Stats row */}
+      {stats && (
+        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:18}}>
+          {[
+            {n:stats.total_cases_in_library||0, l:"Total Cases"},
+            {n:stats.verified_cases||0, l:"Verified"},
+            {n:stats.total||0, l:"Training Samples"},
+            {n:stats.ai_accuracy||"N/A", l:"AI Accuracy"},
+          ].map(({n,l})=>(
+            <div key={l} className="stat-box">
+              <div className="stat-num">{n}</div>
+              <div className="stat-lbl">{l}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Progress toward next milestone */}
+      {stats && stats.total > 0 && (
+        <div className="card" style={{marginBottom:14}}>
+          <div className="cb" style={{paddingTop:12,paddingBottom:14}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+              <div style={{fontSize:13,fontWeight:500}}>Progress to next milestone: <span style={{color:"#0d1f35"}}>{stats.next_milestone} cases</span></div>
+              <div style={{fontFamily:"'DM Mono',monospace",fontSize:11,color:"#7a95a8"}}>{stats.total} / {stats.next_milestone}</div>
+            </div>
+            <div className="progress-bar"><div className="progress-fill" style={{width:`${stats.progress_pct||0}%`}}/></div>
+            <div style={{fontSize:11,color:"#7a95a8",marginTop:5,fontFamily:"'DM Mono',monospace"}}>{stats.next_milestone_label}</div>
+          </div>
+        </div>
+      )}
+
+      {/* Filter + search */}
+      <div style={{display:"flex",gap:10,marginBottom:14,alignItems:"center",flexWrap:"wrap"}}>
+        <input className="inp" style={{maxWidth:220}} value={search} placeholder="Search cases…" onChange={e=>setSearch(e.target.value)}/>
+        <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+          {["All","Verified","Rhythm disorders","Ischaemia & ACS","Conduction","Emergency patterns"].map(f=>(
+            <button key={f} className={`btn btn-sm ${filter===f?"btn-n":"btn-o"}`} onClick={()=>setFilter(f)}>{f}</button>
+          ))}
+        </div>
+        <div style={{marginLeft:"auto"}}><button className="btn btn-r btn-sm" onClick={load}>↻ Refresh</button></div>
+      </div>
+
+      {loading ? (
+        <div style={{textAlign:"center",padding:"40px 20px",color:"#7a95a8"}}>
+          <span className="spinner-dark"/> Loading cases…
+        </div>
+      ) : cases.length === 0 ? (
+        <div style={{textAlign:"center",padding:"60px 20px"}}>
+          <div style={{fontSize:32,marginBottom:12}}>🗂</div>
+          <div style={{fontFamily:"'Fraunces',serif",fontSize:18,fontWeight:500,marginBottom:8}}>No cases yet</div>
+          <div style={{fontSize:13,color:"#7a95a8",marginBottom:16}}>Analyze ECGs and save them, or use Case Builder to add verified cases directly.</div>
+        </div>
+      ) : (
+        <div style={{display:"grid",gridTemplateColumns:selected?"1fr 380px":"repeat(3,1fr)",gap:14}}>
+          <div style={{display:"grid",gridTemplateColumns:selected?"1fr":"repeat(3,1fr)",gap:10,alignContent:"start"}}>
+            {cases.map(c => (
+              <div key={c.report_id} className={`case-card ${selected?.report_id===c.report_id?"selected":""}`} onClick={()=>selectCase(c)}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+                  <div>
+                    <div style={{fontWeight:600,fontSize:13,marginBottom:2}}>{c.correct_diagnosis||c.interpretation||"No diagnosis"}</div>
+                    <div style={{fontSize:11,color:"#7a95a8",fontFamily:"'DM Mono',monospace"}}>{c.report_id} · {c.patient_info?.age?`${c.patient_info.age}y ${c.patient_info.sex}`:"—"}</div>
+                  </div>
+                  <div style={{display:"flex",flexDirection:"column",gap:4,alignItems:"flex-end"}}>
+                    {c.verified && <span className="badge bg">✓ Verified</span>}
+                    {c.critical_alert && c.critical_alert!=="null" && <span className="badge br">⚠ Critical</span>}
+                    <span className="badge bn">{c.category||"Uncategorised"}</span>
+                  </div>
+                </div>
+                {c.rhythm && <div style={{fontSize:11,color:"#4a6277",marginBottom:4}}><span style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:"#7a95a8"}}>RHYTHM </span>{c.rhythm}</div>}
+                <div style={{fontSize:10,color:"#7a95a8",fontFamily:"'DM Mono',monospace"}}>{new Date(c.timestamp).toLocaleDateString()}</div>
+              </div>
+            ))}
+          </div>
+
+          {selected && (
+            <div className="card fu" style={{position:"sticky",top:0,alignSelf:"flex-start"}}>
+              <div className="ch">
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <div className="ct" style={{fontSize:14}}>{selected.correct_diagnosis||selected.interpretation}</div>
+                  <button className="btn btn-o btn-xs" onClick={()=>{setSelected(null);setSelectedImg(null);}}>✕</button>
+                </div>
+                <div style={{fontFamily:"'DM Mono',monospace",fontSize:10,color:"#7a95a8",marginTop:3}}>{selected.report_id} · {selected.patient_info?.complaint||"—"}</div>
+              </div>
+              <div className="cb">
+                {selectedImg ? (
+                  <img src={selectedImg} alt="ECG" style={{width:"100%",maxHeight:200,objectFit:"contain",borderRadius:7,border:"1px solid #dde5ef",marginBottom:12}}/>
+                ) : (
+                  <div style={{height:80,display:"flex",alignItems:"center",justifyContent:"center",color:"#7a95a8",fontSize:12,fontFamily:"'DM Mono',monospace",marginBottom:12}}>Loading image…</div>
+                )}
+                <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>
+                  {selected.verified && <span className="badge bg">✓ Verified</span>}
+                  <span className="badge bn">{selected.category||"—"}</span>
+                  <span className={`badge ${selected.confidence==="HIGH"?"bg":selected.confidence==="LOW"?"br":"ba"}`}>{selected.confidence} conf.</span>
+                </div>
+                {selected.notes && <div style={{fontSize:12,color:"#4a6277",lineHeight:1.7,padding:"8px 10px",background:"#f7f9fc",borderRadius:6,marginBottom:10,borderLeft:"3px solid #0d1f35"}}>{selected.notes}</div>}
+                <div style={{display:"flex",gap:8}}>
+                  <button className="btn btn-n btn-sm" style={{flex:1,justifyContent:"center"}}>Analyze Again</button>
+                  <button className="btn btn-o btn-sm" style={{flex:1,justifyContent:"center"}}>Add to Quiz</button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── DIGITIZER ─────────────────────────────────────────────────
+function Digitizer() {
+  const [imgSrc, setImgSrc] = React.useState(null);
+  const [imgFile, setImgFile] = React.useState(null);
+  const [step, setStep] = React.useState(0); // 0=upload, 1=processing, 2=done
+  const [digitized, setDigitized] = React.useState(null);
+  const [analysis, setAnalysis] = React.useState(null);
+  const [error, setError] = React.useState(null);
+
+  const handleFile = f => {
+    setImgFile(f); setDigitized(null); setAnalysis(null); setError(null); setStep(0);
+    const r = new FileReader(); r.onload = e => setImgSrc(e.target.result); r.readAsDataURL(f);
+  };
+
+  const digitize = async () => {
+    if (!imgFile) return;
+    setStep(1); setError(null); setDigitized(null); setAnalysis(null);
+    try {
+      const form = new FormData();
+      form.append("image", imgFile);
+      form.append("run_analysis", "true");
+      const res = await api("/digitize", {method:"POST", body:form});
+      setDigitized(res.digitized);
+      setAnalysis(res.analysis);
+      setStep(2);
+    } catch(e) { setError(e.message); setStep(0); }
+  };
+
+  const steps = ["Upload","Grid Detection","Lead Isolation","Digitization","AI Report"];
+
+  return (
+    <div>
+      {/* Step progress */}
+      <div style={{display:"flex",alignItems:"flex-start",marginBottom:20,gap:0}}>
+        {steps.map((s,i)=>(
+          <div key={s} style={{display:"flex",alignItems:"center",flex:i<steps.length-1?"1":"none"}}>
+            <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:5}}>
+              <div className={`step-circle ${step>i?"step-done":step===i?"step-active":"step-pending"}`}>{step>i?"✓":i+1}</div>
+              <div style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:step>=i?"#0d1f35":"#7a95a8",textTransform:"uppercase",letterSpacing:"0.06em",whiteSpace:"nowrap",textAlign:"center"}}>{s}</div>
+            </div>
+            {i<steps.length-1&&<div className={`step-line ${step>i?"step-done-line":""}`} style={{marginBottom:18}}/>}
+          </div>
+        ))}
+      </div>
+
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20}}>
+        {/* Upload + controls */}
+        <div>
+          <div className="card">
+            <div className="ch"><div className="ct">Upload Paper ECG</div><div className="cs">Photo or high-res scan of any 12-lead strip</div></div>
+            <div className="cb">
+              <UploadZone imgSrc={imgSrc} onFile={handleFile} onClear={()=>{setImgSrc(null);setImgFile(null);setStep(0);setDigitized(null);setAnalysis(null);}} label="Upload paper ECG for digitization"/>
+              {imgFile && step === 0 && (
+                <button className="btn btn-n" style={{width:"100%",justifyContent:"center",marginTop:12}} onClick={digitize}>
+                  🔬 Digitize + Analyse ECG
+                </button>
+              )}
+              {step === 1 && (
+                <div style={{marginTop:12,padding:"12px 14px",background:"#eef3fb",borderRadius:8,border:"1px solid #dde5ef"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
+                    <span className="spinner-dark"/>
+                    <div style={{fontFamily:"'DM Mono',monospace",fontSize:11,color:"#0d1f35"}}>Processing ECG…</div>
+                  </div>
+                  {["Detecting paper grid and calibration…","Isolating individual leads…","Extracting waveform data…","Running clinical analysis…"].map((s,i)=>(
+                    <div key={i} style={{fontSize:11,color:"#4a6277",padding:"3px 0",fontFamily:"'DM Mono',monospace"}}>→ {s}</div>
+                  ))}
+                </div>
+              )}
+              {error && <div style={{marginTop:10,padding:"10px 12px",background:"#fdecea",borderRadius:7,border:"1px solid #c0392b",fontSize:12,color:"#c0392b"}}>{error}</div>}
+            </div>
+          </div>
+
+          {/* Pipeline explanation */}
+          <div className="card">
+            <div className="ch"><div className="ct" style={{fontSize:14}}>Digitization Pipeline</div></div>
+            <div className="cb">
+              {[
+                {icon:"🔍",t:"Grid Detection",d:"Detects ECG paper grid to calibrate scale (25mm/s, 10mm/mV)"},
+                {icon:"✂️",t:"Lead Isolation",d:"Segments the 4×3 layout into individual lead regions"},
+                {icon:"〰️",t:"Waveform Extraction",d:"Claude Vision extracts per-lead measurements and morphology"},
+                {icon:"🤖",t:"AI Classification",d:"Full clinical interpretation with differential diagnosis"},
+              ].map(({icon,t,d})=>(
+                <div key={t} style={{display:"flex",gap:10,padding:"8px 0",borderBottom:"1px solid #f0f4f8"}}>
+                  <span style={{fontSize:18,flexShrink:0}}>{icon}</span>
+                  <div><div style={{fontWeight:500,fontSize:13}}>{t}</div><div style={{fontSize:11,color:"#7a95a8",marginTop:1}}>{d}</div></div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Results */}
+        <div>
+          {digitized && (
+            <div className="card fu">
+              <div className="ch"><div className="ct">Digitized Measurements</div><div className="cs">Extracted from image</div></div>
+              <div className="cb">
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
+                  {[
+                    ["Heart Rate", digitized.heart_rate_bpm ? `${digitized.heart_rate_bpm} bpm` : "—"],
+                    ["RR Interval", digitized.rr_interval_ms ? `${digitized.rr_interval_ms} ms` : "—"],
+                    ["PR Interval", digitized.pr_interval_ms ? `${digitized.pr_interval_ms} ms` : "—"],
+                    ["QRS Duration", digitized.qrs_duration_ms ? `${digitized.qrs_duration_ms} ms` : "—"],
+                    ["QTc", digitized.qtc_ms ? `${digitized.qtc_ms} ms` : "—"],
+                    ["QRS Axis", digitized.qrs_axis !== null && digitized.qrs_axis !== undefined ? `${digitized.qrs_axis}°` : "—"],
+                    ["Paper Speed", digitized.paper_speed || "—"],
+                    ["Calibration", digitized.calibration || "—"],
+                  ].map(([k,v])=>(
+                    <div key={k} style={{background:"#f0f4f8",borderRadius:7,padding:"9px 11px"}}>
+                      <div style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:"#7a95a8",textTransform:"uppercase",letterSpacing:"0.06em"}}>{k}</div>
+                      <div style={{fontFamily:"'Fraunces',serif",fontSize:17,fontWeight:500,color:"#0d1f35",marginTop:2}}>{v}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Per-lead findings */}
+                {digitized.lead_findings && (
+                  <div>
+                    <div style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:"#7a95a8",textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:8}}>Lead-by-Lead Findings</div>
+                    <div className="lead-grid">
+                      {Object.entries(digitized.lead_findings).map(([lead,desc])=>(
+                        <div key={lead} className="lead-cell">
+                          <div className="lead-name">{lead}</div>
+                          <div className="lead-val">{desc}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {digitized.notes && (
+                  <div style={{marginTop:12,padding:"8px 10px",background:"#fef9ec",border:"1px solid #d4820a",borderRadius:6,fontSize:12,color:"#7a4a00"}}>{digitized.notes}</div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {analysis && (
+            <div className="card fu">
+              <div className="ch"><div className="ct">Clinical Interpretation</div></div>
+              <div className="cb"><FindingsPanel findings={analysis} confidence={analysis.confidence} imageQuality={analysis.image_quality}/></div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── TRAINING DASHBOARD ────────────────────────────────────────
+function TrainingDashboard() {
+  const [stats, setStats] = React.useState(null);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(()=>{
+    api("/training/stats").then(setStats).catch(()=>{}).finally(()=>setLoading(false));
+  }, []);
+
+  if (loading) return <div style={{textAlign:"center",padding:"40px",color:"#7a95a8"}}><span className="spinner-dark"/> Loading…</div>;
+  if (!stats) return <div style={{textAlign:"center",padding:"40px",color:"#7a95a8"}}>Could not load training stats.</div>;
+
+  const milestones = [50,200,500,2000,10000];
+  const phases = [
+    {milestone:50,title:"Phase 1 — Demo Ready",desc:"Show AI improving to colleagues and potential investors",achieved:stats.total>=50},
+    {milestone:200,title:"Phase 2 — Clinical Validation",desc:"Present to cardiologists for expert feedback and validation",achieved:stats.total>=200},
+    {milestone:500,title:"Phase 3 — Train First ML Model",desc:"Run PyTorch ResNet training on Google Colab. Produce specialist model.",achieved:stats.total>=500},
+    {milestone:2000,title:"Phase 4 — Junior Cardiologist Accuracy",desc:"Model accuracy comparable to a cardiology trainee",achieved:stats.total>=2000},
+    {milestone:10000,title:"Phase 5 — Publication Grade",desc:"Publishable accuracy data. Fundable. App Store ready.",achieved:stats.total>=10000},
+  ];
+
+  return (
+    <div>
+      {/* Stats */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:20}}>
+        {[
+          {n:stats.total,l:"Training Samples"},
+          {n:stats.verified_cases||0,l:"Verified Cases"},
+          {n:stats.ai_accuracy||"N/A",l:"AI Accuracy"},
+          {n:stats.ready_for_training?"Ready":"Not yet",l:"ML Training"},
+        ].map(({n,l})=>(
+          <div key={l} className="stat-box">
+            <div className="stat-num" style={{fontSize:n===String(n)&&n.length>5?20:32}}>{n}</div>
+            <div className="stat-lbl">{l}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Progress bar */}
+      <div className="card" style={{marginBottom:18}}>
+        <div className="cb">
+          <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
+            <div style={{fontWeight:500,fontSize:14}}>Overall Progress</div>
+            <div style={{fontFamily:"'DM Mono',monospace",fontSize:12,color:"#7a95a8"}}>{stats.total} / {stats.next_milestone} cases</div>
+          </div>
+          <div className="progress-bar"><div className="progress-fill" style={{width:`${stats.progress_pct||0}%`}}/></div>
+          <div style={{fontSize:12,color:"#7a95a8",marginTop:5}}>{stats.next_milestone_label}</div>
+        </div>
+      </div>
+
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:18}}>
+        {/* Milestones */}
+        <div>
+          <div className="card">
+            <div className="ch"><div className="ct">Training Roadmap</div></div>
+            <div className="cb">
+              {phases.map((p,i)=>(
+                <div key={p.milestone} style={{display:"flex",gap:12,padding:"12px 0",borderBottom:i<phases.length-1?"1px solid #f0f4f8":"none"}}>
+                  <div style={{width:32,height:32,borderRadius:"50%",background:p.achieved?"#1a7a4a":"#eef2f7",color:p.achieved?"#fff":"#7a95a8",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,flexShrink:0}}>
+                    {p.achieved?"✓":p.milestone>=1000?`${p.milestone/1000}k`:p.milestone}
+                  </div>
+                  <div>
+                    <div style={{fontWeight:500,fontSize:13,color:p.achieved?"#1a7a4a":"#1a2b3c"}}>{p.title}</div>
+                    <div style={{fontSize:11,color:"#7a95a8",marginTop:2,lineHeight:1.5}}>{p.desc}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* By category + next steps */}
+        <div>
+          {stats.by_category && Object.keys(stats.by_category).length > 0 && (
+            <div className="card" style={{marginBottom:14}}>
+              <div className="ch"><div className="ct" style={{fontSize:14}}>Dataset by Category</div></div>
+              <div className="cb">
+                {Object.entries(stats.by_category).sort((a,b)=>b[1]-a[1]).map(([cat,count])=>(
+                  <div key={cat} style={{marginBottom:10}}>
+                    <div style={{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:3}}>
+                      <span style={{color:"#1a2b3c"}}>{cat}</span>
+                      <span style={{fontFamily:"'DM Mono',monospace",color:"#7a95a8"}}>{count}</span>
+                    </div>
+                    <div className="progress-bar"><div className="progress-fill" style={{width:`${Math.min(100,(count/Math.max(...Object.values(stats.by_category)))*100)}%`}}/></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="card" style={{background:"#0d1f35",border:"none"}}>
+            <div className="cb">
+              <div style={{fontFamily:"'Fraunces',serif",fontSize:15,fontWeight:500,color:"#fff",marginBottom:10}}>When You Hit 500 Cases</div>
+              <div style={{fontSize:12,color:"rgba(255,255,255,0.65)",lineHeight:1.8}}>
+                1. Export training data from <span style={{fontFamily:"'DM Mono',monospace",color:"#10b981"}}>/training/export</span><br/>
+                2. Open Google Colab (free GPU)<br/>
+                3. Upload <span style={{fontFamily:"'DM Mono',monospace",color:"#10b981"}}>train_ecg_model.py</span> from ROADMAP<br/>
+                4. Run training (~2-3 hours)<br/>
+                5. Download <span style={{fontFamily:"'DM Mono',monospace",color:"#10b981"}}>ecg_model.pth</span><br/>
+                6. Upload to Railway → instant specialist model
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── PDF EXPORT ────────────────────────────────────────────────
 function PDFExport({ data, onBack }) {
-  const pageRef = React.useRef(null);
   const { report, imgSrc, info } = data;
   const f = report?.ecg_findings || {};
   const now = new Date().toLocaleString("en-GB",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"});
-  const isCritical = f.critical_alert && f.critical_alert.toLowerCase()!=="null" && f.critical_alert.toLowerCase()!=="none";
+  const isCrit = f.critical_alert && f.critical_alert !== "null" && f.critical_alert !== "none" && f.critical_alert !== null;
+  const conf = confStr(report?.confidence);
 
   const print = () => {
     const w = window.open("","_blank");
-    w.document.write(`<!DOCTYPE html><html><head><title>CardioLens Report ${report.report_id}</title>
-    <style>body{font-family:'DM Sans',sans-serif;margin:32px;color:#1a2b3c;font-size:13px}
-    .header{display:flex;justify-content:space-between;border-bottom:2px solid #0d1f35;padding-bottom:14px;margin-bottom:16px}
+    w.document.write(`<!DOCTYPE html><html><head><title>CardioLens ${report.report_id}</title>
+    <style>body{font-family:sans-serif;margin:32px;color:#1a2b3c;font-size:13px}
+    .hdr{display:flex;justify-content:space-between;border-bottom:2px solid #0d1f35;padding-bottom:14px;margin-bottom:16px}
     .st{font-family:monospace;font-size:9px;text-transform:uppercase;letter-spacing:0.1em;color:#0d1f35;border-bottom:1px solid #dde5ef;padding-bottom:4px;margin:14px 0 8px}
-    .row{display:grid;grid-template-columns:140px 1fr;gap:6px;padding:4px 0;border-bottom:1px solid #f0f4f8;font-size:12px}
-    .key{color:#7a95a8;font-family:monospace;font-size:10px}.val{color:#1a2b3c;font-weight:500}
-    .finding{font-size:12px;padding:7px 11px;background:#f7f9fc;border-left:3px solid #0d1f35;margin-bottom:5px;border-radius:0 4px 4px 0;line-height:1.6}
-    .crit-banner{background:#fdecea;border:2px solid #c0392b;border-radius:8px;padding:12px 16px;margin-bottom:16px}
-    img{max-width:100%;border-radius:6px;border:1px solid #dde5ef;margin-bottom:12px}
-    .footer{margin-top:20px;padding-top:12px;border-top:1px solid #dde5ef;display:flex;justify-content:space-between;font-size:9px;color:#7a95a8;font-family:monospace}
+    .row{display:grid;grid-template-columns:140px 1fr;padding:4px 0;border-bottom:1px solid #f0f4f8;font-size:12px;gap:6px}
+    .key{color:#7a95a8;font-family:monospace;font-size:10px}
+    .finding{font-size:12px;padding:7px 11px;background:#f7f9fc;border-left:3px solid #0d1f35;margin-bottom:5px;line-height:1.6}
+    .crit{background:#fdecea;border:2px solid #c0392b;border-radius:8px;padding:12px;margin-bottom:16px}
+    img{max-width:100%;max-height:200px;object-fit:contain;border:1px solid #dde5ef;border-radius:6px;margin-bottom:10px}
+    .footer{margin-top:20px;padding-top:10px;border-top:1px solid #dde5ef;display:flex;justify-content:space-between;font-family:monospace;font-size:9px;color:#7a95a8}
     @media print{button{display:none}}</style></head><body>
-    <div class="header"><div><strong style="font-size:20px;color:#0d1f35">🫀 CardioLens</strong><br><span style="font-size:9px;color:#7a95a8;font-family:monospace;text-transform:uppercase;letter-spacing:0.08em">ECG Intelligence Platform · Educational & Research Use Only</span><br><span style="color:#c0392b;font-size:11px;font-weight:600">⚠ Not a substitute for clinical judgment</span></div><div style="text-align:right"><span style="font-family:monospace;font-size:10px;color:#7a95a8">Report ID</span><br><strong style="font-size:18px;color:#0d1f35">${report.report_id}</strong><br><span style="font-family:monospace;font-size:10px;color:#7a95a8">${now}</span></div></div>
-    ${isCritical?`<div class="crit-banner"><strong style="color:#c0392b">⚠ CRITICAL FINDING</strong><br><span style="font-size:12px;color:#7a1a1a">${f.critical_alert}</span></div>`:""}
-    <div class="st">Patient & Clinical Information</div>
+    <div class="hdr"><div><strong style="font-size:20px;color:#0d1f35">🫀 CardioLens</strong><br>
+    <span style="font-family:monospace;font-size:9px;color:#7a95a8">ECG Intelligence Platform · Educational Use Only</span><br>
+    <span style="color:#c0392b;font-size:11px;font-weight:600">⚠ Not a substitute for clinical judgment</span></div>
+    <div style="text-align:right"><span style="font-family:monospace;font-size:10px;color:#7a95a8">Report ID</span><br>
+    <strong style="font-size:18px;color:#0d1f35">${report.report_id}</strong><br>
+    <span style="font-family:monospace;font-size:10px;color:#7a95a8">${now}</span></div></div>
+    ${isCrit?`<div class="crit"><strong style="color:#c0392b">⚠ CRITICAL</strong><br><span style="font-size:12px">${f.critical_alert}</span></div>`:""}
+    <div class="st">Patient</div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:12px">
-      ${[["Patient",info.age?`${info.age}y ${info.sex}`:"—"],["Complaint",info.complaint||"—"],["Context",info.context||"—"],["Analysis","Real ECG — Claude Vision"]].map(([k,v])=>`<div style="padding:8px;background:#f7f9fc;border-radius:6px"><div class="key">${k}</div><div class="val" style="font-size:12px;margin-top:2px">${v}</div></div>`).join("")}
+      ${[["Patient",info?.age?`${info.age}y ${info.sex}`:"—"],["Complaint",info?.complaint||"—"],["Context",info?.context||"—"],["Confidence",conf]].map(([k,v])=>`<div style="padding:8px;background:#f7f9fc;border-radius:6px"><div class="key">${k}</div><div style="font-weight:500;font-size:12px;margin-top:2px">${v}</div></div>`).join("")}
     </div>
-    ${imgSrc?`<div class="st">Original ECG</div><img src="${imgSrc}" style="max-height:240px;object-fit:contain">`:""} 
-    ${f.interpretation?`<div class="st">Primary Interpretation</div><div class="finding" style="font-weight:600;font-size:13px;background:#eef3fb;border-color:#0d1f35">${f.interpretation}</div>`:""}
+    ${imgSrc?`<div class="st">Original ECG</div><img src="${imgSrc}">`:""} 
+    ${f.interpretation?`<div class="st">Interpretation</div><div class="finding" style="font-weight:600;font-size:13px;background:#eef3fb;border-color:#0d1f35">${f.interpretation}</div>`:""}
     <div class="st">ECG Analysis</div>
-    ${["rate","rhythm","p_waves","pr_interval","qrs_complex","st_t_waves","qt_interval","axis"].map(k=>f[k]?`<div class="row"><span class="key">${k.replace(/_/g," ").toUpperCase()}</span><span class="val" style="font-weight:400">${f[k]}</span></div>`:"").join("")}
+    ${["rate","rhythm","p_waves","pr_interval","qrs_complex","st_t_waves","qt_interval","axis","stemi_territory"].map(k=>f[k]?`<div class="row"><span class="key">${k.replace(/_/g," ").toUpperCase()}</span><span>${Array.isArray(f[k])?f[k].join(", "):f[k]}</span></div>`:"").join("")}
+    ${f.other_findings?.length?`<div class="row"><span class="key">OTHER FINDINGS</span><span>${Array.isArray(f.other_findings)?f.other_findings.join(", "):f.other_findings}</span></div>`:""}
     ${f.differentials?.length?`<div class="st">Differentials</div><div class="finding" style="border-color:#d4820a;background:#fef9ec">${Array.isArray(f.differentials)?f.differentials.join(" · "):f.differentials}</div>`:""}
     ${f.management?`<div class="st">Management</div><div class="finding">${f.management}</div>`:""}
-    <div class="footer"><span>CardioLens · Educational Use Only · Not for Clinical Decision Making</span><span>Generated ${now} · Report ${report.report_id}</span></div>
+    <div class="footer"><span>CardioLens · Educational Use Only</span><span>${now} · ${report.report_id}</span></div>
     </body></html>`);
     w.document.close(); setTimeout(()=>w.print(),600);
   };
 
-  return React.createElement("div", {className:"fu",style:{display:"flex",flexDirection:"column",gap:16}},
-    React.createElement("div", {style:{display:"flex",justifyContent:"space-between",alignItems:"center"}},
-      React.createElement("div", null,
-        React.createElement("div", {style:{fontFamily:"'Fraunces',serif",fontSize:22,fontWeight:500}}, "PDF Report Preview"),
-        React.createElement("div", {style:{fontSize:13,color:"#7a95a8",marginTop:2}}, "For educational and research use only")
-      ),
-      React.createElement("div", {style:{display:"flex",gap:10}},
-        React.createElement("button", {className:"btn btn-o btn-sm",onClick:onBack}, "← Back"),
-        React.createElement("button", {className:"btn btn-g",onClick:print}, "🖨 Print / Save PDF")
-      )
-    ),
-    React.createElement("div", {ref:pageRef,className:"pdf-page"},
-      React.createElement("div", {style:{display:"flex",justifyContent:"space-between",alignItems:"flex-start",borderBottom:"2px solid #0d1f35",paddingBottom:14,marginBottom:16}},
-        React.createElement("div", null,
-          React.createElement("div", {style:{fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:20,color:"#0d1f35"}}, "🫀 CardioLens"),
-          React.createElement("div", {style:{fontFamily:"'DM Mono',monospace",fontSize:9,color:"#7a95a8",marginTop:2,textTransform:"uppercase",letterSpacing:"0.08em"}}, "ECG Intelligence Platform · Educational & Research Use Only"),
-          React.createElement("div", {style:{marginTop:8,fontSize:11,color:"#c0392b",fontWeight:600}}, "⚠ Not a substitute for clinical judgment")
-        ),
-        React.createElement("div", {style:{textAlign:"right"}},
-          React.createElement("div", {style:{fontFamily:"'DM Mono',monospace",fontSize:10,color:"#7a95a8"}}, "Report ID"),
-          React.createElement("div", {style:{fontFamily:"'DM Mono',monospace",fontSize:18,fontWeight:500,color:"#0d1f35"}}, report.report_id),
-          React.createElement("div", {style:{fontFamily:"'DM Mono',monospace",fontSize:10,color:"#7a95a8",marginTop:4}}, now)
-        )
-      ),
-      isCritical && React.createElement("div", {style:{background:"#fdecea",border:"2px solid #c0392b",borderRadius:8,padding:"12px 16px",marginBottom:16}},
-        React.createElement("div", {style:{fontWeight:700,fontSize:13,color:"#c0392b",marginBottom:3}}, "⚠ CRITICAL FINDING"),
-        React.createElement("div", {style:{fontSize:12,color:"#7a1a1a"}}, f.critical_alert)
-      ),
-      f.interpretation && React.createElement(React.Fragment, null,
-        React.createElement("div", {className:"pdf-st"}, "Primary Interpretation"),
-        React.createElement("div", {className:"pdf-finding",style:{fontWeight:600,fontSize:13,background:"#eef3fb",borderColor:"#0d1f35"}}, f.interpretation)
-      ),
-      imgSrc && React.createElement(React.Fragment, null,
-        React.createElement("div", {className:"pdf-st"}, "Original ECG"),
-        React.createElement("img", {src:imgSrc,style:{width:"100%",maxHeight:240,objectFit:"contain",marginBottom:12,borderRadius:6,border:"1px solid #dde5ef"}})
-      ),
-      React.createElement("div", {className:"pdf-st"}, "ECG Analysis"),
-      ["rate","rhythm","p_waves","pr_interval","qrs_complex","st_t_waves","qt_interval","axis"].map(k=>f[k]&&
-        React.createElement("div",{key:k,style:{display:"grid",gridTemplateColumns:"140px 1fr",gap:6,padding:"4px 0",borderBottom:"1px solid #f0f4f8",fontSize:12}},
-          React.createElement("span",{style:{fontFamily:"'DM Mono',monospace",fontSize:10,color:"#7a95a8"}},k.replace(/_/g," ").toUpperCase()),
-          React.createElement("span",{style:{color:"#1a2b3c",fontWeight:400}},f[k])
-        )
-      ),
-      f.differentials?.length>0 && React.createElement(React.Fragment,null,
-        React.createElement("div",{className:"pdf-st"},"Differentials"),
-        React.createElement("div",{className:"pdf-finding warn"},Array.isArray(f.differentials)?f.differentials.join(" · "):f.differentials)
-      ),
-      f.management && React.createElement(React.Fragment,null,
-        React.createElement("div",{className:"pdf-st"},"Management"),
-        React.createElement("div",{className:"pdf-finding"},f.management)
-      ),
-      React.createElement("div",{style:{marginTop:20,paddingTop:12,borderTop:"1px solid #dde5ef",display:"flex",justifyContent:"space-between",fontFamily:"'DM Mono',monospace",fontSize:9,color:"#7a95a8"}},
-        React.createElement("span",null,"CardioLens · Educational Use Only · Not for Clinical Decision Making"),
-        React.createElement("span",null,`Generated ${now} · Report ${report.report_id}`)
-      )
-    )
+  return (
+    <div className="fu">
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+        <div><div className="page-title">PDF Report Preview</div><div className="page-sub">For educational and research use only</div></div>
+        <div style={{display:"flex",gap:10}}>
+          <button className="btn btn-o btn-sm" onClick={onBack}>← Back</button>
+          <button className="btn btn-g" onClick={print}>🖨 Print / Save PDF</button>
+        </div>
+      </div>
+      <div style={{background:"#fff",border:"1px solid #dde5ef",borderRadius:8,padding:"28px 32px",boxShadow:"0 2px 12px rgba(13,31,53,0.08)"}}>
+        <div style={{display:"flex",justifyContent:"space-between",borderBottom:"2px solid #0d1f35",paddingBottom:14,marginBottom:16}}>
+          <div>
+            <div style={{fontWeight:700,fontSize:20,color:"#0d1f35"}}>🫀 CardioLens</div>
+            <div style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:"#7a95a8",marginTop:2}}>ECG Intelligence Platform · Educational Use Only</div>
+            <div style={{marginTop:8,fontSize:11,color:"#c0392b",fontWeight:600}}>⚠ Not a substitute for clinical judgment</div>
+          </div>
+          <div style={{textAlign:"right"}}>
+            <div style={{fontFamily:"'DM Mono',monospace",fontSize:10,color:"#7a95a8"}}>Report ID</div>
+            <div style={{fontFamily:"'DM Mono',monospace",fontSize:18,fontWeight:500,color:"#0d1f35"}}>{report.report_id}</div>
+            <div style={{fontFamily:"'DM Mono',monospace",fontSize:10,color:"#7a95a8",marginTop:4}}>{now}</div>
+          </div>
+        </div>
+        {isCrit && <div style={{background:"#fdecea",border:"2px solid #c0392b",borderRadius:8,padding:"12px 16px",marginBottom:16}}><div style={{fontWeight:700,color:"#c0392b",marginBottom:3}}>⚠ CRITICAL</div><div style={{fontSize:12,color:"#7a1a1a"}}>{f.critical_alert}</div></div>}
+        {f.interpretation && <><div style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:"#0d1f35",textTransform:"uppercase",letterSpacing:"0.1em",borderBottom:"1px solid #dde5ef",paddingBottom:4,margin:"14px 0 8px"}}>Interpretation</div><div style={{fontSize:13,padding:"7px 11px",background:"#eef3fb",borderLeft:"3px solid #0d1f35",fontWeight:600,borderRadius:"0 4px 4px 0",marginBottom:5}}>{f.interpretation}</div></>}
+        {imgSrc && <><div style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:"#0d1f35",textTransform:"uppercase",letterSpacing:"0.1em",borderBottom:"1px solid #dde5ef",paddingBottom:4,margin:"14px 0 8px"}}>Original ECG</div><img src={imgSrc} alt="ECG" style={{width:"100%",maxHeight:220,objectFit:"contain",marginBottom:12,borderRadius:6,border:"1px solid #dde5ef"}}/></>}
+        {f.management && <><div style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:"#0d1f35",textTransform:"uppercase",letterSpacing:"0.1em",borderBottom:"1px solid #dde5ef",paddingBottom:4,margin:"14px 0 8px"}}>Management</div><div style={{fontSize:12,padding:"7px 11px",background:"#fef9ec",borderLeft:"3px solid #d4820a",borderRadius:"0 4px 4px 0"}}>{f.management}</div></>}
+        <div style={{marginTop:20,paddingTop:12,borderTop:"1px solid #dde5ef",display:"flex",justifyContent:"space-between",fontFamily:"'DM Mono',monospace",fontSize:9,color:"#7a95a8"}}>
+          <span>CardioLens · Educational Use Only · Not for Clinical Decision Making</span>
+          <span>Generated {now} · Report {report.report_id}</span>
+        </div>
+      </div>
+    </div>
   );
 }
 
-const NAV=[
+// ─── APP SHELL ─────────────────────────────────────────────────
+const NAV = [
   {id:"analyzer",icon:"🔬",label:"ECG Analyzer",group:"Clinical"},
-  {id:"learn",icon:"📚",label:"Tutorials",group:"Education"},
-  {id:"quiz",icon:"🎯",label:"Clinical Quiz",group:"Education"},
+  {id:"digitizer",icon:"📡",label:"ECG Digitizer",group:"Clinical"},
+  {id:"library",icon:"🗂",label:"ECG Library",group:"Dataset"},
+  {id:"builder",icon:"💾",label:"Case Builder",group:"Dataset"},
+  {id:"training",icon:"🧠",label:"Training Dashboard",group:"Dataset"},
 ];
-const TITLES={analyzer:"ECG Analyzer",learn:"Tutorials",quiz:"Clinical Quiz",pdf:"PDF Report"};
-const SUBS={
+
+const TITLES = {analyzer:"ECG Analyzer",digitizer:"ECG Digitizer",library:"ECG Library",builder:"Case Builder",training:"Training Dashboard",pdf:"PDF Report"};
+const SUBS = {
   analyzer:"Upload a real ECG photo — Claude Vision reads and interprets it",
-  learn:"Step-by-step tutorials for systematic ECG interpretation",
-  quiz:"Test your clinical decision-making with annotated cases",
+  digitizer:"Convert a paper ECG strip into structured digital measurements",
+  library:"Browse, search and manage your entire ECG case library",
+  builder:"Add verified ECG cases to build your training dataset",
+  training:"Track your dataset growth toward ML model training",
 };
 
 function App() {
@@ -403,74 +1015,74 @@ function App() {
   const [backendOk, setBackendOk] = React.useState(null);
 
   React.useEffect(()=>{
-    fetch(`${BACKEND_URL}/health`)
-      .then(r=>r.ok?setBackendOk(true):setBackendOk(false))
-      .catch(()=>setBackendOk(false));
+    fetch(`${BACKEND}/health`).then(r=>r.ok?setBackendOk(true):setBackendOk(false)).catch(()=>setBackendOk(false));
   },[]);
 
-  const groups=[...new Set(NAV.map(n=>n.group))];
-  const page = pdfData?"pdf":active;
+  const groups = [...new Set(NAV.map(n=>n.group))];
+  const page = pdfData ? "pdf" : active;
 
-  return React.createElement("div", {className:"shell"},
-    React.createElement("aside", {className:"sb"},
-      React.createElement("div", {className:"sb-logo"},
-        React.createElement("div", {className:"sb-icon"}, "🫀"),
-        React.createElement("div", null,
-          React.createElement("div", {className:"sb-title"}, "CardioLens"),
-          React.createElement("div", {className:"sb-sub"}, "ECG Platform")
-        )
-      ),
-      React.createElement("nav", {className:"sb-nav"},
-        groups.map(g=>React.createElement("div",{key:g},
-          React.createElement("div",{className:"sb-grp"},g),
-          NAV.filter(n=>n.group===g).map(n=>
-            React.createElement("button",{key:n.id,className:`sb-btn ${active===n.id&&!pdfData?"on":""}`,onClick:()=>{setActive(n.id);setPdfData(null)}},
-              React.createElement("span",{className:"sb-ico"},n.icon),n.label,React.createElement("span",{className:"sdot"})
-            )
-          )
-        ))
-      ),
-      React.createElement("div", {className:"sb-foot"},
-        React.createElement("div", {style:{display:"flex",alignItems:"center",gap:8,marginBottom:8}},
-          React.createElement("div", {className:`ldot ${backendOk===false?"off":""}`}),
-          React.createElement("div", null,
-            React.createElement("div", {style:{fontFamily:"'DM Mono',monospace",fontSize:9,color:"rgba(255,255,255,0.48)"}},
-              backendOk===null?"CHECKING…":backendOk?"BACKEND ONLINE":"BACKEND OFFLINE"
-            ),
-            React.createElement("div", {style:{fontFamily:"'DM Mono',monospace",fontSize:8,color:"rgba(255,255,255,0.28)",marginTop:1}}, "claude-opus-4-5 · vision")
-          )
-        ),
-        React.createElement("div", {style:{fontSize:9,color:"rgba(255,255,255,0.2)",fontFamily:"'DM Mono',monospace",lineHeight:1.55}}, "Educational use only.")
-      )
-    ),
-    React.createElement("div", {className:"main"},
-      React.createElement("header", {className:"topbar"},
-        React.createElement("div", {className:"bc"},
-          React.createElement("span",null,"CardioLens"),
-          React.createElement("span",{style:{color:"#dde5ef"}},"›"),
-          React.createElement("span",{className:"bca"},TITLES[page])
-        ),
-        React.createElement("div",{style:{flex:1}}),
-        React.createElement("span",{style:{fontSize:10,color:"#7a95a8",fontFamily:"'DM Mono',monospace"}},"Beta v1.0"),
-        React.createElement("div",{style:{width:1,height:14,background:"#dde5ef",margin:"0 8px"}}),
-        React.createElement("button",{className:"btn btn-r btn-sm",onClick:()=>{setActive("analyzer");setPdfData(null)}},"+ New Case")
-      ),
-      React.createElement("div", {className:"body"},
-        !pdfData && React.createElement("div",{style:{marginBottom:18}},
-          React.createElement("div",{style:{fontFamily:"'Fraunces',serif",fontSize:22,fontWeight:500,color:"#1a2b3c"}},TITLES[active]),
-          React.createElement("div",{style:{fontSize:13,color:"#4a6277",marginTop:3}},SUBS[active])
-        ),
-        pdfData
-          ? React.createElement(PDFExport,{data:pdfData,onBack:()=>setPdfData(null)})
-          : active==="analyzer" ? React.createElement(Analyzer,{onExport:d=>setPdfData(d)})
-          : React.createElement("div",{style:{padding:"40px 20px",textAlign:"center",color:"#7a95a8"}},active==="learn"?"Tutorials coming soon":"Quiz coming soon")
-      )
-    )
+  return (
+    <div className="shell">
+      <aside className="sidebar">
+        <div className="sb-logo">
+          <div className="sb-icon">🫀</div>
+          <div><div className="sb-title">CardioLens</div><div className="sb-sub">ECG Platform v2</div></div>
+        </div>
+        <nav className="sb-nav">
+          {groups.map(g=>(
+            <div key={g}>
+              <div className="sb-grp">{g}</div>
+              {NAV.filter(n=>n.group===g).map(n=>(
+                <button key={n.id} className={`sb-btn ${active===n.id&&!pdfData?"active":""}`} onClick={()=>{setActive(n.id);setPdfData(null);}}>
+                  <span style={{fontSize:14,width:18,textAlign:"center",flexShrink:0}}>{n.icon}</span>{n.label}
+                </button>
+              ))}
+            </div>
+          ))}
+        </nav>
+        <div className="sb-foot">
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+            <div className={`ldot ${backendOk===false?"off":""}`}/>
+            <div>
+              <div style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:"rgba(255,255,255,0.5)"}}>
+                {backendOk===null?"CHECKING…":backendOk?"BACKEND ONLINE":"BACKEND OFFLINE"}
+              </div>
+              <div style={{fontFamily:"'DM Mono',monospace",fontSize:8,color:"rgba(255,255,255,0.3)",marginTop:1}}>claude-opus-4-5 · vision</div>
+            </div>
+          </div>
+          <div style={{fontSize:9,color:"rgba(255,255,255,0.2)",fontFamily:"'DM Mono',monospace",lineHeight:1.55}}>Educational use only.</div>
+        </div>
+      </aside>
+
+      <div className="main">
+        <header className="topbar">
+          <div style={{fontFamily:"'DM Mono',monospace",fontSize:11,color:"#7a95a8",display:"flex",alignItems:"center",gap:5}}>
+            <span>CardioLens</span><span style={{color:"#dde5ef"}}>›</span>
+            <span style={{color:"#1a2b3c",fontWeight:500}}>{TITLES[page]}</span>
+          </div>
+          <div style={{flex:1}}/>
+          <span style={{fontSize:10,color:"#7a95a8",fontFamily:"'DM Mono',monospace"}}>Beta v2.0</span>
+          <div style={{width:1,height:14,background:"#dde5ef",margin:"0 8px"}}/>
+          <button className="btn btn-r btn-sm" onClick={()=>{setActive("analyzer");setPdfData(null);}}>+ New Case</button>
+        </header>
+
+        <div className="body">
+          {!pdfData && <div style={{marginBottom:18}}><div className="page-title">{TITLES[active]}</div><div className="page-sub">{SUBS[active]}</div></div>}
+          <div className="fu" key={pdfData?"pdf":active}>
+            {pdfData ? <PDFExport data={pdfData} onBack={()=>setPdfData(null)}/>
+              : active==="analyzer" ? <Analyzer onExport={d=>setPdfData(d)}/>
+              : active==="digitizer" ? <Digitizer/>
+              : active==="library" ? <Library/>
+              : active==="builder" ? <CaseBuilder/>
+              : <TrainingDashboard/>}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(React.createElement(App));
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
 </script>
 </body>
 </html>
